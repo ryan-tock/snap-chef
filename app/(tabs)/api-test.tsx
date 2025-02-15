@@ -1,6 +1,18 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TextInput, Button, Alert, ScrollView, Image, ActivityIndicator, StyleSheet } from 'react-native';
+import { 
+  View, 
+  Text, 
+  Button, 
+  Alert, 
+  ScrollView, 
+  Image, 
+  ActivityIndicator, 
+  StyleSheet,
+  TouchableOpacity,
+  SafeAreaView,
+} from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+import { MaterialIcons } from '@expo/vector-icons';
 
 interface Recipe {
   title: string;
@@ -91,115 +103,195 @@ const ApiTest = () => {
   }, []);
 
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.content}>
-        <Button 
-          title="Pick from Gallery" 
-          onPress={pickImage} 
-        />
+    <SafeAreaView style={styles.container}>
+      <ScrollView style={styles.scrollView}>
+        <View style={styles.content}>
+          <Text style={styles.title}>Snap Chef</Text>
+          
+          <TouchableOpacity 
+            style={styles.uploadButton} 
+            onPress={pickImage}
+          >
+            <MaterialIcons name="photo-library" size={24} color="white" />
+            <Text style={styles.uploadButtonText}>Choose Photo</Text>
+          </TouchableOpacity>
 
-        {image && (
-          <>
-            <Image 
-              source={{ uri: image }} 
-              style={styles.image} 
-            />
-            <Button 
-              title="Analyze Fridge" 
-              onPress={handleImageUpload}
-              disabled={isLoading} 
-            />
-          </>
-        )}
+          {image && (
+            <View style={styles.imageContainer}>
+              <Image 
+                source={{ uri: image }} 
+                style={styles.image} 
+              />
+              <TouchableOpacity 
+                style={styles.analyzeButton}
+                onPress={handleImageUpload}
+                disabled={isLoading}
+              >
+                <MaterialIcons name="search" size={24} color="white" />
+                <Text style={styles.buttonText}>Analyze Fridge</Text>
+              </TouchableOpacity>
+            </View>
+          )}
 
-        {isLoading && <ActivityIndicator size="large" />}
+          {isLoading && (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color="#4CAF50" />
+              <Text style={styles.loadingText}>Analyzing your fridge...</Text>
+            </View>
+          )}
 
-        {fridgeContents && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Fridge Contents:</Text>
-            <Text style={{ color: 'black' }}>{fridgeContents}</Text>
-          </View>
-        )}
+          {fridgeContents && (
+            <View style={styles.card}>
+              <Text style={styles.cardTitle}>Fridge Contents</Text>
+              <Text style={styles.cardText}>{fridgeContents}</Text>
+            </View>
+          )}
 
-        {matchedRecipes.length > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Matched Recipes:</Text>
-            {matchedRecipes.map((recipe, index) => (
-              <View key={index} style={styles.recipe}>
-                <Text style={styles.recipeTitle}>{recipe.title}</Text>
-                <Text style={styles.subTitle}>Ingredients:</Text>
-                {recipe.ingredients.map((ingredient, i) => (
-                  <Text key={i} style={{ color: 'black' }}>• {ingredient}</Text>
-                ))}
-                <Text style={styles.subTitle}>Instructions:</Text>
-                {recipe.instructions.map((step, i) => (
-                  <Text key={i} style={{ color: 'black' }}>{i + 1}. {step}</Text>
-                ))}
-              </View>
-            ))}
-          </View>
-        )}
+          {matchedRecipes.length > 0 && (
+            <View style={styles.card}>
+              <Text style={styles.cardTitle}>Matched Recipes</Text>
+              {matchedRecipes.map((recipe, index) => (
+                <View key={index} style={styles.recipeCard}>
+                  <Text style={styles.recipeTitle}>{recipe.title}</Text>
+                  <Text style={styles.sectionTitle}>Ingredients</Text>
+                  {recipe.ingredients.map((ingredient, i) => (
+                    <Text key={i} style={styles.listItem}>• {ingredient}</Text>
+                  ))}
+                  <Text style={styles.sectionTitle}>Instructions</Text>
+                  {recipe.instructions.map((step, i) => (
+                    <Text key={i} style={styles.listItem}>{i + 1}. {step}</Text>
+                  ))}
+                </View>
+              ))}
+            </View>
+          )}
 
-        {aiSuggestions && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>AI Recipe Suggestions:</Text>
-            <Text style={{ color: 'black' }}>{aiSuggestions}</Text>
-          </View>
-        )}
-      </View>
-    </ScrollView>
+          {aiSuggestions && (
+            <View style={styles.card}>
+              <Text style={styles.cardTitle}>AI Recipe Suggestions</Text>
+              <Text style={styles.cardText}>{aiSuggestions}</Text>
+            </View>
+          )}
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f0f0f0',
+    backgroundColor: '#f5f5f5',
+  },
+  scrollView: {
+    flex: 1,
   },
   content: {
-    padding: 20,
+    padding: 16,
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#2E7D32',
+    textAlign: 'center',
+    marginVertical: 20,
+  },
+  uploadButton: {
+    backgroundColor: '#4CAF50',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 15,
+    borderRadius: 10,
+    marginBottom: 20,
+  },
+  uploadButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: 8,
+  },
+  imageContainer: {
+    marginBottom: 20,
   },
   image: {
     width: '100%',
     height: 200,
-    marginVertical: 10,
-    resizeMode: 'contain',
+    borderRadius: 10,
+    marginBottom: 10,
   },
-  section: {
-    marginTop: 20,
-    backgroundColor: 'white',
+  analyzeButton: {
+    backgroundColor: '#2E7D32',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
     padding: 15,
     borderRadius: 10,
   },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 10,
-    color: 'black',
+  buttonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: 8,
   },
-  recipe: {
+  loadingContainer: {
+    alignItems: 'center',
+    marginVertical: 20,
+  },
+  loadingText: {
+    marginTop: 10,
+    color: '#666',
+    fontSize: 16,
+  },
+  card: {
+    backgroundColor: 'white',
+    borderRadius: 10,
+    padding: 16,
     marginBottom: 20,
-    padding: 10,
-    backgroundColor: '#f5f5f5',
-    borderRadius: 5,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  cardTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#2E7D32',
+    marginBottom: 12,
+  },
+  cardText: {
+    fontSize: 16,
+    color: '#333',
+    lineHeight: 24,
+  },
+  recipeCard: {
+    backgroundColor: '#f8f8f8',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 12,
   },
   recipeTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#1B5E20',
+    marginBottom: 8,
+  },
+  sectionTitle: {
     fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 5,
-    color: 'black',
+    fontWeight: '600',
+    color: '#2E7D32',
+    marginTop: 12,
+    marginBottom: 8,
   },
-  subTitle: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    marginTop: 10,
-    marginBottom: 5,
-    color: 'black',
-  },
-  buttonContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginBottom: 20,
+  listItem: {
+    fontSize: 15,
+    color: '#333',
+    marginBottom: 4,
+    paddingLeft: 8,
   },
 });
 
