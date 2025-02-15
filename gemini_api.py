@@ -6,31 +6,8 @@ import json
 model = "gemini-2.0-flash"
 client = genai.Client(api_key="AIzaSyBC8hhozZxMx9PXLLUGfLZfhrwpkH222JY")
 
-def is_overlap_over_80(fridge_ingredients, recipe_ingredients):
-    fridge_set = {item.strip().lower() for item in fridge_ingredients}
-    recipe_set = {item.strip().lower() for item in recipe_ingredients}
-
-    common = fridge_set.intersection(recipe_set)
-
-    if not recipe_set:
-        return False, 0.0, common
-    
-    overlap_percentage = len(common) / len(recipe_set)
-    return overlap_percentage >= 0.8, overlap_percentage, common
-
 def parse_foods(foods_txt):
     return [item.strip().lower() for item in foods_txt.split(',')]
-
-def get_potential_recipes(fridge_ingredients, json_file="complete-recipes-list.json"):
-    recipes = []
-    with open(json_file, "r") as f:
-        all_recipes = json.load(f)
-    for recipe in all_recipes:
-        recipe_ingredients_list = [item.strip().lower() for item in recipe.get("ingridients", [])]
-        is_match, overlap_percentage, common = is_overlap_over_80(fridge_ingredients, recipe_ingredients_list)
-        if is_match:
-            recipes.append(recipe)
-    return recipes
 
 if __name__ == '__main__':
     path = "images\\fridgeImage.jpg"
@@ -46,11 +23,6 @@ if __name__ == '__main__':
     print("Fridge contents:", foods_txt)
 
     fridge_ingredients = parse_foods(foods_txt)
-    suggested_recipes = get_potential_recipes(fridge_ingredients, "complete-recipes-list.json")
-    print("Suggested recipes based on fridge ingredients:")
-    for rec in suggested_recipes:
-        title = rec.get("basic_info", {}).get("title", "Untitled")
-        print("-", title)
 
     recipe_prompt = (
         f"Based on the following list of foods and their quantities: {foods_txt}, "
