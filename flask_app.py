@@ -4,7 +4,6 @@ import PIL.Image
 from gemini_api import (
     client,
     model,
-    get_potential_recipes,
     parse_foods
 )
 
@@ -70,7 +69,6 @@ def analyze_fridge():
 
             # Continue with normal processing
             fridge_ingredients = parse_foods(foods_txt)
-            suggested_recipes = get_potential_recipes(fridge_ingredients)
             
             # Get AI recipe suggestions
             recipe_prompt = (
@@ -94,27 +92,6 @@ def analyze_fridge():
                     </div>
                     
                     <div class="section">
-                        <div class="section-title">Matched Recipes:</div>
-                        {''.join([f'''
-                            <div class="recipe">
-                                <div class="recipe-title">{recipe.get("basic_info", {}).get("title", "Untitled")}</div>
-                                <div>
-                                    <strong>Ingredients:</strong>
-                                    <ul>
-                                        {''.join([f"<li>{ingredient}</li>" for ingredient in recipe.get("ingridients", [])])}
-                                    </ul>
-                                </div>
-                                <div>
-                                    <strong>Instructions:</strong>
-                                    <ol>
-                                        {''.join([f"<li>{instruction}</li>" for instruction in recipe.get("instructions", [])])}
-                                    </ol>
-                                </div>
-                            </div>
-                        ''' for recipe in suggested_recipes])}
-                    </div>
-                    
-                    <div class="section">
                         <div class="section-title">AI Recipe Suggestions:</div>
                         <p style="white-space: pre-line">{recipe_response.text}</p>
                     </div>
@@ -124,13 +101,6 @@ def analyze_fridge():
             # If the request wants JSON (from API calls)
             return jsonify({
                 "fridge_contents": foods_txt,
-                "matched_recipes": [
-                    {
-                        "title": recipe.get("basic_info", {}).get("title", "Untitled"),
-                        "ingredients": recipe.get("ingridients", []),
-                        "instructions": recipe.get("instructions", [])
-                    } for recipe in suggested_recipes
-                ],
                 "ai_suggestions": recipe_response.text
             })
             
