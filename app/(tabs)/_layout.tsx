@@ -8,6 +8,8 @@ import TabBarBackground from '@/components/ui/TabBarBackground';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 
+import Entypo from '@expo/vector-icons/Entypo';
+
 export default function TabLayout() {
   const colorScheme = useColorScheme();
 
@@ -29,15 +31,22 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Home',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
+          title: 'Upload',
+          tabBarIcon: ({ color }) => <Entypo name="camera" size={24} color={color}/>,
         }}
       />
       <Tabs.Screen
-        name="explore"
+        name="ingredients"
         options={{
-          title: 'Explore',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
+          title: 'Ingredients',
+          tabBarIcon: ({ color }) => <Entypo name="shopping-basket" size={24} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="recipes"
+        options={{
+          title: 'Recipes',
+          tabBarIcon: ({ color }) => <Entypo name="book" size={24} color={color} />,
         }}
       />
     </Tabs>

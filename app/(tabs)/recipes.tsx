@@ -8,7 +8,7 @@ export default function HomeScreen() {
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollMenu}>
         <ThemedView style={styles.titleContainer}>
-          <ThemedText type="title">Camera</ThemedText>
+          <ThemedText type="title">Recipes</ThemedText>
         </ThemedView>
         {/* <ThemedView style={styles.stepContainer}>
           <ThemedText type="subtitle">Step 1: Try it</ThemedText>
