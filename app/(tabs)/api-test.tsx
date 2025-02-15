@@ -147,25 +147,6 @@ const ApiTest = () => {
             </View>
           )}
 
-          {matchedRecipes.length > 0 && (
-            <View style={styles.card}>
-              <Text style={styles.cardTitle}>Matched Recipes</Text>
-              {matchedRecipes.map((recipe, index) => (
-                <View key={index} style={styles.recipeCard}>
-                  <Text style={styles.recipeTitle}>{recipe.title}</Text>
-                  <Text style={styles.sectionTitle}>Ingredients</Text>
-                  {recipe.ingredients.map((ingredient, i) => (
-                    <Text key={i} style={styles.listItem}>• {ingredient}</Text>
-                  ))}
-                  <Text style={styles.sectionTitle}>Instructions</Text>
-                  {recipe.instructions.map((step, i) => (
-                    <Text key={i} style={styles.listItem}>{i + 1}. {step}</Text>
-                  ))}
-                </View>
-              ))}
-            </View>
-          )}
-
           {aiSuggestions && (
             <View style={styles.card}>
               <Text style={styles.cardTitle}>AI Recipe Suggestions</Text>
