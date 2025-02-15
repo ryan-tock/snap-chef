@@ -1,74 +1,100 @@
-import { SafeAreaView, ScrollView, StyleSheet, Platform } from 'react-native';
+import { SafeAreaView, ScrollView, StyleSheet, Platform, View, Image, TouchableOpacity } from 'react-native';
 
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 
+import { CameraView, CameraType, useCameraPermissions, Camera } from 'expo-camera';
+import { useState, useEffect, useRef } from 'react';
+
 export default function HomeScreen() {
+
+  const [facing, setFacing] = useState<CameraType>('back');
+  const [permission, requestPermission] = useCameraPermissions();
+  const [photo, setPhoto] = useState<string | null>(null);
+  const cameraRef = useRef<CameraView>(null);
+
+  useEffect(() => {
+    if (!permission) {
+        requestPermission();
+    }
+}, [permission]);
+
+  if (!permission) {
+    return <View />
+  }
+  if (!permission.granted) {
+    return <View />
+  }
+
+  const takePicture = async () => {
+    
+    
+    if (cameraRef.current) {
+      const photoData = await cameraRef.current.takePictureAsync(); // Capture the photo
+      if (photoData == undefined) {
+        return;
+      }
+      setPhoto(photoData.uri); // Save photo URI
+    } else {
+      console.log("no camera ref")
+    }
+  };
+
+  const resetPicture = async () => {
+    setPhoto(null);
+  }
+
+
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollMenu}>
-        <ThemedView style={styles.titleContainer}>
-          <ThemedText type="title">Camera</ThemedText>
-        </ThemedView>
-        {/* <ThemedView style={styles.stepContainer}>
-          <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-          <ThemedText>
-            Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-            Press{' '}
-            <ThemedText type="defaultSemiBold">
-              {Platform.select({
-                ios: 'cmd + d',
-                android: 'cmd + m',
-                web: 'F12'
-              })}
-            </ThemedText>{' '}
-            to open developer tools.
-          </ThemedText>
-        </ThemedView>
-        <ThemedView style={styles.stepContainer}>
-          <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          <ThemedText>
-            Tap the Explore tab to learn more about what's included in this starter app.
-          </ThemedText>
-        </ThemedView>
-        <ThemedView style={styles.stepContainer}>
-          <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-          <ThemedText>
-            When you're ready, run{' '}
-            <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-            <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-            <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-            <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-          </ThemedText>
-        </ThemedView> */}
-      </ScrollView>
+      <View style={styles.cameraContainer}>
+        <ThemedText style={styles.titleContainer} type="title">Camera</ThemedText>
+        {photo ? (
+          <Image source={{ uri : photo}} style={styles.camera} />
+        ) : (
+          <CameraView ref={cameraRef} style={styles.camera} facing={facing} />
+        )}
+        {photo ? (
+          <TouchableOpacity style={styles.captureButton} onPress={resetPicture}>
+            <ThemedText type="default" darkColor='black'>🗑 Clear Photo</ThemedText>
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity style={styles.captureButton} onPress={takePicture}>
+            <ThemedText type="default" darkColor='black'>📸 Take Photo</ThemedText>
+          </TouchableOpacity>
+        )}
+      </View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-  },
-  scrollMenu: {
-    paddingTop: 20,
-    paddingLeft: 20,
-    paddingRight: 20,
+    flex:1,
   },
   titleContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+    paddingTop: 20,
+    paddingLeft: 20,
+    paddingRight: 20,
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
+  camera: {
+    flex: 1,
+    width: '100%',
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+  cameraContainer: {
+    flex: 1,
+    backgroundColor: 'transparent',
+  },
+  captureButton: {
+    backgroundColor: '#fff',
+    padding: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 50,
+    alignSelf: 'center',
+    borderRadius: 50,
   },
 });
