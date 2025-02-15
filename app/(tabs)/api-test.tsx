@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, TextInput, Button, Alert, ScrollView, Image, ActivityIndicator, StyleSheet } from 'react-native';
-import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 
 interface Recipe {
@@ -9,10 +8,9 @@ interface Recipe {
   instructions: string[];
 }
 
-const API_URL = 'http://localhost:5000'; // or your Flask server URL
+const API_URL = 'http://10.37.163.63:5000'; // Use your actual local IP here
 
 const ApiTest = () => {
-  const router = useRouter();
   const [image, setImage] = useState<string | null>(null);
   const [fridgeContents, setFridgeContents] = useState('');
   const [matchedRecipes, setMatchedRecipes] = useState<Recipe[]>([]);
@@ -31,6 +29,8 @@ const ApiTest = () => {
         name: 'fridge.jpg',
       } as any);
 
+      console.log('Sending request to:', `${API_URL}/api/analyze-fridge`);
+      
       const response = await fetch(`${API_URL}/api/analyze-fridge`, {
         method: 'POST',
         body: formData,
@@ -39,17 +39,23 @@ const ApiTest = () => {
         },
       });
 
+      console.log('Response status:', response.status);
       const data = await response.json();
+      console.log('Response data:', data);
+
       if (response.ok) {
+        console.log('Setting fridge contents:', data.fridge_contents);
         setFridgeContents(data.fridge_contents);
+        console.log('Setting matched recipes:', data.matched_recipes);
         setMatchedRecipes(data.matched_recipes);
+        console.log('Setting AI suggestions:', data.ai_suggestions);
         setAiSuggestions(data.ai_suggestions);
       } else {
         Alert.alert('Error', data.error || 'Failed to analyze image');
       }
     } catch (error) {
+      console.error('Detailed error:', error);
       Alert.alert('Error', 'Failed to connect to server');
-      console.error(error);
     } finally {
       setIsLoading(false);
     }
@@ -71,7 +77,7 @@ const ApiTest = () => {
   };
 
   const takePicture = () => {
-    router.push('/camera');
+    // router.push('/camera');
   };
 
   useEffect(() => {
@@ -83,13 +89,6 @@ const ApiTest = () => {
       }
     })();
   }, []);
-
-  useEffect(() => {
-    // Handle image from camera
-    if (router.current?.params?.imageUri) {
-      setImage(router.current.params.imageUri as string);
-    }
-  }, [router.current?.params]);
 
   return (
     <ScrollView style={styles.container}>
@@ -118,7 +117,7 @@ const ApiTest = () => {
         {fridgeContents && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Fridge Contents:</Text>
-            <Text>{fridgeContents}</Text>
+            <Text style={{ color: 'black' }}>{fridgeContents}</Text>
           </View>
         )}
 
@@ -130,11 +129,11 @@ const ApiTest = () => {
                 <Text style={styles.recipeTitle}>{recipe.title}</Text>
                 <Text style={styles.subTitle}>Ingredients:</Text>
                 {recipe.ingredients.map((ingredient, i) => (
-                  <Text key={i}>• {ingredient}</Text>
+                  <Text key={i} style={{ color: 'black' }}>• {ingredient}</Text>
                 ))}
                 <Text style={styles.subTitle}>Instructions:</Text>
                 {recipe.instructions.map((step, i) => (
-                  <Text key={i}>{i + 1}. {step}</Text>
+                  <Text key={i} style={{ color: 'black' }}>{i + 1}. {step}</Text>
                 ))}
               </View>
             ))}
@@ -144,7 +143,7 @@ const ApiTest = () => {
         {aiSuggestions && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>AI Recipe Suggestions:</Text>
-            <Text>{aiSuggestions}</Text>
+            <Text style={{ color: 'black' }}>{aiSuggestions}</Text>
           </View>
         )}
       </View>
@@ -155,6 +154,7 @@ const ApiTest = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#f0f0f0',
   },
   content: {
     padding: 20,
@@ -167,11 +167,15 @@ const styles = StyleSheet.create({
   },
   section: {
     marginTop: 20,
+    backgroundColor: 'white',
+    padding: 15,
+    borderRadius: 10,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 10,
+    color: 'black',
   },
   recipe: {
     marginBottom: 20,
@@ -183,12 +187,14 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     marginBottom: 5,
+    color: 'black',
   },
   subTitle: {
     fontSize: 14,
     fontWeight: 'bold',
     marginTop: 10,
     marginBottom: 5,
+    color: 'black',
   },
   buttonContainer: {
     flexDirection: 'row',
