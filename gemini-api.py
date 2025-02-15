@@ -1,19 +1,21 @@
 from google import genai
 from google.genai import types
 import PIL.Image
-import sqlite3
+import json
 
 model="gemini-2.0-flash"
-image = PIL.Image.open('/Users/jcson/Downloads/fridgeImage.jpg')
+path = "images\\fridgeImage.jpg"
+# path = "images\\getty.jpg"
+image = PIL.Image.open(path)
 
 client = genai.Client(api_key="AIzaSyBC8hhozZxMx9PXLLUGfLZfhrwpkH222JY")
 food_response = client.models.generate_content(
-    model="gemini-2.0-flash",
+    model=model,
     contents=["Identify all the foods and the number of each food in the fridge.", image]
     )
 
 foods_txt = food_response.text
-print(foods_txt)
+print("Fridge contents:", foods_txt)
 
 def is_overlap_over_80(fridge_ingredients, recipe_ingredients):
     fridge_set = {item.strip().lower() for item in fridge_ingredients}
@@ -32,29 +34,23 @@ def parse_foods(foods_txt):
 
 fridge_ingredients = parse_foods(foods_txt)
 
-conn = sqlite3.connect('recipes.db')
-cursor = conn.cursor()
-
-def get_potential_recipes(fridge_ingredients):
+def get_potential_recipes(fridge_ingredients, json_file="complete-recipes-list.json"):
     recipes = []
-    cursor.execute("Select id, name, ingredients, directions, other info")
-    all_recipes = cursor.fetchall()
-
+    with open(json_file, "r") as f:
+        all_recipes = json.load(f)  # Works even if the JSON is on one line
     for recipe in all_recipes:
-        recipe_id, recipe_name, recipe_ingredients, recipe_directions, recipe_metadata = recipe
-        recipe_ingredients_list = parse_foods(recipe_ingredients)
-        if is_overlap_over_80(fridge_ingredients, recipe_ingredients_list):
-            recipes.append({
-                "id": recipe_id,
-                "name": recipe_name,
-                "ingredients": recipe_ingredients_list,
-                "directions": recipe_directions,
-                "metadata": recipe_metadata
-            })
-
+        # Note: In your JSON, the ingredients are stored under "ingridients"
+        recipe_ingredients_list = [item.strip().lower() for item in recipe.get("ingridients", [])]
+        is_match, overlap_percentage, common = is_overlap_over_80(fridge_ingredients, recipe_ingredients_list)
+        if is_match:
+            recipes.append(recipe)
     return recipes
 
-# suggested_recipes = get_potential_recipes(fridge_ingredients)
+suggested_recipes = get_potential_recipes(fridge_ingredients, "complete-recipes-list.json")
+print("Suggested recipes based on fridge ingredients:")
+for rec in suggested_recipes:
+    title = rec.get("basic_info", {}).get("title", "Untitled")
+    print("-", title)
 
 recipe_prompt = (
     f"Based on the following list of foods and their quantities: {foods_txt}, "
