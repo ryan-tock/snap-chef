@@ -1,10 +1,6 @@
-import google.generativeai as genai
-import google.generativeai as genai
 from google import genai
 from google.genai import types
-import pathlib
 import PIL.Image
-import os
 
 model="gemini-2.0-flash"
 image = PIL.Image.open('/Users/jcson/Downloads/fridgeImage.jpg')
