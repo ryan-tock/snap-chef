@@ -1,12 +1,21 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, TextInput, Button, Alert, ScrollView, Image, ActivityIndicator, StyleSheet } from 'react-native';
+import { useRouter } from 'expo-router';
+import * as ImagePicker from 'expo-image-picker';
+
+interface Recipe {
+  title: string;
+  ingredients: string[];
+  instructions: string[];
+}
 
 const API_URL = 'http://localhost:5000'; // or your Flask server URL
 
 const ApiTest = () => {
+  const router = useRouter();
   const [image, setImage] = useState<string | null>(null);
   const [fridgeContents, setFridgeContents] = useState('');
-  const [matchedRecipes, setMatchedRecipes] = useState([]);
+  const [matchedRecipes, setMatchedRecipes] = useState<Recipe[]>([]);
   const [aiSuggestions, setAiSuggestions] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -20,7 +29,7 @@ const ApiTest = () => {
         uri: image,
         type: 'image/jpeg',
         name: 'fridge.jpg',
-      });
+      } as any);
 
       const response = await fetch(`${API_URL}/api/analyze-fridge`, {
         method: 'POST',
@@ -46,12 +55,48 @@ const ApiTest = () => {
     }
   };
 
+  const pickImage = async () => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        quality: 1,
+      });
+
+      if (!result.canceled) {
+        setImage(result.assets[0].uri);
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Failed to pick image');
+    }
+  };
+
+  const takePicture = () => {
+    router.push('/camera');
+  };
+
+  useEffect(() => {
+    // Request permissions
+    (async () => {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Sorry, we need camera roll permissions to make this work!');
+      }
+    })();
+  }, []);
+
+  useEffect(() => {
+    // Handle image from camera
+    if (router.current?.params?.imageUri) {
+      setImage(router.current.params.imageUri as string);
+    }
+  }, [router.current?.params]);
+
   return (
     <ScrollView style={styles.container}>
       <View style={styles.content}>
         <Button 
-          title="Select Fridge Image" 
-          onPress={() => {/* Add your image picker logic here */}} 
+          title="Pick from Gallery" 
+          onPress={pickImage} 
         />
 
         {image && (
@@ -144,6 +189,11 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginTop: 10,
     marginBottom: 5,
+  },
+  buttonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginBottom: 20,
   },
 });
 
