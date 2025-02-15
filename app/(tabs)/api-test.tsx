@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { MaterialIcons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 
 interface Recipe {
   title: string;
@@ -20,14 +21,49 @@ interface Recipe {
   instructions: string[];
 }
 
+interface Ingredient {
+  name: string;
+  amount: number;
+  unit?: string;
+}
+
 const API_URL = 'http://10.37.163.63:5000'; // Use your actual local IP here
 
 const ApiTest = () => {
+  const router = useRouter();
   const [image, setImage] = useState<string | null>(null);
   const [fridgeContents, setFridgeContents] = useState('');
   const [matchedRecipes, setMatchedRecipes] = useState<Recipe[]>([]);
   const [aiSuggestions, setAiSuggestions] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [ingredients, setIngredients] = useState<Ingredient[]>([]);
+
+  const parseIngredients = (contents: string) => {
+    const ingredientsList: Ingredient[] = [];
+    const lines = contents.split('\n');
+    
+    lines.forEach(line => {
+      const match = line.match(/\*\*([^:]+):\*\*\s*([^,\n]+)/);
+      if (match) {
+        const name = match[1].trim();
+        const quantityStr = match[2].trim();
+        
+        const numericMatch = quantityStr.match(/(\d+)(?:-(\d+))?\s*([a-zA-Z]*)/);
+        if (numericMatch) {
+          const amount = parseInt(numericMatch[2] || numericMatch[1]);
+          const unit = numericMatch[3] || 'pieces';
+          
+          ingredientsList.push({
+            name,
+            amount,
+            unit
+          });
+        }
+      }
+    });
+    
+    return ingredientsList;
+  };
 
   const handleImageUpload = async () => {
     if (!image) return;
@@ -57,11 +93,13 @@ const ApiTest = () => {
 
       if (response.ok) {
         console.log('Setting fridge contents:', data.fridge_contents);
-        setFridgeContents(data.fridge_contents);
+        setFridgeContents(data.fridge_contents || '');
+        const parsedIngredients = parseIngredients(data.fridge_contents);
+        setIngredients(parsedIngredients);
         console.log('Setting matched recipes:', data.matched_recipes);
-        setMatchedRecipes(data.matched_recipes);
+        setMatchedRecipes(Array.isArray(data.matched_recipes) ? data.matched_recipes : []);
         console.log('Setting AI suggestions:', data.ai_suggestions);
-        setAiSuggestions(data.ai_suggestions);
+        setAiSuggestions(data.ai_suggestions || '');
       } else {
         Alert.alert('Error', data.error || 'Failed to analyze image');
       }
@@ -152,6 +190,19 @@ const ApiTest = () => {
               <Text style={styles.cardTitle}>AI Recipe Suggestions</Text>
               <Text style={styles.cardText}>{aiSuggestions}</Text>
             </View>
+          )}
+
+          {ingredients.length > 0 && (
+            <TouchableOpacity 
+              style={styles.ingredientsButton}
+              onPress={() => router.push({
+                pathname: '/ingredients',
+                params: { ingredients: JSON.stringify(ingredients) }
+              })}
+            >
+              <MaterialIcons name="kitchen" size={24} color="white" />
+              <Text style={styles.buttonText}>View Ingredients</Text>
+            </TouchableOpacity>
           )}
         </View>
       </ScrollView>
@@ -273,6 +324,15 @@ const styles = StyleSheet.create({
     color: '#333',
     marginBottom: 4,
     paddingLeft: 8,
+  },
+  ingredientsButton: {
+    backgroundColor: '#1976D2',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 15,
+    borderRadius: 10,
+    marginVertical: 10,
   },
 });
 
