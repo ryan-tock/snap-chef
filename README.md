@@ -1,1 +1,1 @@
-# treehacks2025
+# Snap Chef App - TreeHacks 2025
