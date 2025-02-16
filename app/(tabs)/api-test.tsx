@@ -27,7 +27,7 @@ interface Ingredient {
   unit?: string;
 }
 
-const API_URL = 'http://10.37.163.63:5000'; // Use your actual local IP here
+const API_URL = 'http://10.37.163.63:5000';  // Verify this IP is correct
 
 const ApiTest = () => {
   const router = useRouter();
