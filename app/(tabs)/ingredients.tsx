@@ -32,12 +32,9 @@ interface Ingredient {
 
 export default function IngredientsScreen() {
   const params = useLocalSearchParams();
-<<<<<<< HEAD
   const { isDark } = useThemeToggle();
   const currentColorScheme = isDark ? 'dark' : 'light';
-=======
   const router = useRouter();
->>>>>>> bf46308f3d91d345d560e387a0911791626d68a9
 
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -296,19 +293,6 @@ export default function IngredientsScreen() {
           renderItem={({ item }) => (
             <View style={[styles.ingredientContainer, { backgroundColor: Colors[currentColorScheme].cardBackground }]} key={item.id}>
               <View style={styles.headerRow}>
-<<<<<<< HEAD
-                <TouchableOpacity 
-                  onPress={() => {
-                    setEditingIngredient(item);
-                    setEditedName(item.name);
-                    setEditModalVisible(true);
-                  }}
-                >
-                  <ThemedText style={[styles.ingredientName, { color: Colors[currentColorScheme].text }]}>
-                    {item.name} {item.unit ? `(${item.unit})` : ''}
-                  </ThemedText>
-                </TouchableOpacity>
-=======
                 <View style={styles.nameContainer}>
                   <TouchableOpacity 
                     onPress={() => {
@@ -322,7 +306,6 @@ export default function IngredientsScreen() {
                     </ThemedText>
                   </TouchableOpacity>
                 </View>
->>>>>>> bf46308f3d91d345d560e387a0911791626d68a9
 
                 <View style={styles.expiringContainer}>
                   <ThemedText style={[
@@ -625,15 +608,6 @@ const styles = StyleSheet.create({
   },
   checkboxContainer: {
     padding: 4,
-<<<<<<< HEAD
-  },
-  ingredientName: {
-    fontSize: 18,
-    fontWeight: '600',
-    flex: 1,
-    marginRight: 8,
-=======
->>>>>>> bf46308f3d91d345d560e387a0911791626d68a9
   },
   amountRow: {
     flexDirection: 'row',
