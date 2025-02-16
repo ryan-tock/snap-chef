@@ -8,7 +8,7 @@ import {
   TouchableOpacity
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useState, useEffect } from 'react';
 import DropDownPicker from 'react-native-dropdown-picker';
 
@@ -32,6 +32,7 @@ interface Recipe {
 
 function RecipesScreen(): React.JSX.Element {
   const params = useLocalSearchParams();
+  const router = useRouter();
 
   // Load recipes from route parameters if provided; otherwise, use sample recipes.
   const [recipes, setRecipes] = useState<Recipe[]>([]);
@@ -87,33 +88,6 @@ function RecipesScreen(): React.JSX.Element {
     { label: 'Salad', value: 'Salad' },
   ]);
 
-  // --- Filter Panel for extra filters (if needed) ---
-  const [filterPanelOpen, setFilterPanelOpen] = useState(false);
-  const [dietaryFilter, setDietaryFilter] = useState('All');
-  const [dietaryItems, setDietaryItems] = useState([
-    { label: 'All', value: 'All' },
-    { label: 'Vegetarian', value: 'Vegetarian' },
-    { label: 'Vegan', value: 'Vegan' },
-    { label: 'Gluten-Free', value: 'Gluten-Free' },
-  ]);
-  const [servingsFilter, setServingsFilter] = useState('All');
-  const [servingsItems, setServingsItems] = useState([
-    { label: 'All', value: 'All' },
-    { label: '1', value: '1' },
-    { label: '2', value: '2' },
-    { label: '3', value: '3' },
-    { label: '4', value: '4' },
-    { label: '5', value: '5' },
-  ]);
-  const [requiredFilter, setRequiredFilter] = useState('All');
-  const [requiredItems, setRequiredItems] = useState([
-    { label: 'All', value: 'All' },
-    { label: 'Cheese', value: 'Cheese' },
-    { label: 'Eggs', value: 'Eggs' },
-    { label: 'Milk', value: 'Milk' },
-    { label: 'Pasta', value: 'Pasta' },
-  ]);
-
   // --- New Multi-select Filter Dropdown for dietary and expiring soon ---
   const filterOptions = [
     { label: 'Vegan', value: 'Vegan' },
@@ -136,9 +110,6 @@ function RecipesScreen(): React.JSX.Element {
       }
     });
   };
-
-  // --- Option to toggle between All Recipes and Saved Recipes ---
-  const [showSaved, setShowSaved] = useState(false);
 
   // --- Sample Recipes ---
   const sampleRecipes: Recipe[] = [
@@ -205,25 +176,8 @@ function RecipesScreen(): React.JSX.Element {
     ? allRecipes 
     : allRecipes.filter(recipe => recipe.title.toLowerCase().includes(filterBy.toLowerCase()));
 
-  // --- Apply Extra Filter Panel Options ---
-  let filteredByFilters = filteredByFilter;
-  if (dietaryFilter !== 'All') {
-    filteredByFilters = filteredByFilters.filter(recipe =>
-      recipe.dietary?.includes(dietaryFilter)
-    );
-  }
-  if (servingsFilter !== 'All') {
-    filteredByFilters = filteredByFilters.filter(recipe =>
-      recipe.servings === parseInt(servingsFilter)
-    );
-  }
-  if (requiredFilter !== 'All') {
-    filteredByFilters = filteredByFilters.filter(recipe =>
-      recipe.requiredItems?.includes(requiredFilter)
-    );
-  }
-
   // --- Apply Multi-select Filter Options ---
+  let filteredByFilters = filteredByFilter;
   if (selectedFilters.length > 0) {
     if (selectedFilters.includes('Vegan')) {
       filteredByFilters = filteredByFilters.filter(recipe => recipe.dietary?.includes('Vegan'));
@@ -267,7 +221,7 @@ function RecipesScreen(): React.JSX.Element {
     );
   }
 
-  // Recipe Card (without image).
+  // Recipe Card Component
   const RecipeCard = ({ recipe }: { recipe: Recipe }) => {
     const [expanded, setExpanded] = useState(false);
     const isSaved = savedRecipes.some(r => r.id === recipe.id);
@@ -363,35 +317,21 @@ function RecipesScreen(): React.JSX.Element {
           />
         </View>
 
-        {/* Saved Recipes Tab (always visible, below search bar) */}
+        {/* Saved Recipes Button */}
         <TouchableOpacity 
           style={styles.savedTab}
-          onPress={() => setShowSaved(true)}
+          onPress={() => router.push('/saved_recipes')}
         >
           <MaterialIcons name="bookmark" size={24} color="#fff" />
           <ThemedText style={styles.savedTabText}>Saved Recipes</ThemedText>
         </TouchableOpacity>
 
-        {/* Render content based on selected tab */}
-        {showSaved ? (
-          savedRecipes.length > 0 ? (
-            <FlatList
-              data={savedRecipes}
-              keyExtractor={item => item.id}
-              renderItem={({ item }) => <RecipeCard recipe={item} />}
-            />
-          ) : (
-            <View style={styles.emptyContainer}>
-              <ThemedText style={styles.emptyText}>No saved recipes</ThemedText>
-            </View>
-          )
-        ) : (
-          <FlatList
-            data={sortedRecipes}
-            keyExtractor={item => item.id}
-            renderItem={({ item }) => <RecipeCard recipe={item} />}
-          />
-        )}
+        {/* Render Main Recipes List */}
+        <FlatList
+          data={sortedRecipes}
+          keyExtractor={item => item.id}
+          renderItem={({ item }) => <RecipeCard recipe={item} />}
+        />
 
         {/* Filter Dropdown */}
         {openFilter && (
@@ -536,7 +476,7 @@ const styles = StyleSheet.create({
   },
   subtab: {
     marginTop: 8,
-    backgroundColor: '#f0f0f0', // Grey white background for subtabs
+    backgroundColor: '#f0f0f0',
     borderTopWidth: 1,
     borderTopColor: '#ccc',
     paddingTop: 8,
@@ -555,13 +495,5 @@ const styles = StyleSheet.create({
     color: '#333',
     marginBottom: 4,
     paddingLeft: 8,
-  },
-  emptyContainer: {
-    alignItems: 'center',
-    padding: 16,
-  },
-  emptyText: {
-    fontSize: 18,
-    color: '#555',
   },
 });

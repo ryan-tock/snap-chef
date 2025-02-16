@@ -33,10 +33,9 @@ interface Recipe {
 const SavedRecipesScreen = (): React.JSX.Element => {
   const router = useRouter();
 
-  // Simulate loading saved recipes.
-  // Replace this with your actual saved recipes source.
+  // Replace with your actual saved recipes source (global state, AsyncStorage, etc.)
   const [savedRecipes, setSavedRecipes] = useState<Recipe[]>([]);
-  
+
   // --- Search State ---
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -144,7 +143,7 @@ const SavedRecipesScreen = (): React.JSX.Element => {
     );
   }
 
-  // Recipe Card component (same as main screen)
+  // Recipe Card component
   const RecipeCard = ({ recipe }: { recipe: Recipe }) => {
     const [expanded, setExpanded] = useState(false);
 
