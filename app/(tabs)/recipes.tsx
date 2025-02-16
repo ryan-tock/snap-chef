@@ -25,12 +25,15 @@ interface Recipe {
   category: string;
   description: string; // One-line description from Gemini
   ingredients: Ingredient[];
+  prepTime: number; // in minutes
+  cookTime: number; // in minutes
+  nutritionalValues: string; // e.g., "500 kcal, 20g protein, etc."
 }
 
 export default function HomeScreen() {
   const [searchQuery, setSearchQuery] = useState('');
 
-  // DropDownPicker states
+  // DropDownPicker for filtering categories
   const [open, setOpen] = useState(false);
   const [value, setValue] = useState('all'); // Current filter value
   const [items, setItems] = useState([
@@ -40,7 +43,15 @@ export default function HomeScreen() {
     { label: 'Dinner', value: 'Dinner' },
   ]);
 
-  // Example list of recipes with a description from Gemini
+  // DropDownPicker for sorting recipes
+  const [sortOpen, setSortOpen] = useState(false);
+  const [sortValue, setSortValue] = useState('match'); // 'match' or 'time'
+  const [sortItems, setSortItems] = useState([
+    { label: 'Matching Ingredients', value: 'match' },
+    { label: 'Total Time', value: 'time' },
+  ]);
+
+  // Example list of recipes with additional properties
   const recipes: Recipe[] = [
     {
       id: '1',
@@ -52,6 +63,9 @@ export default function HomeScreen() {
         { name: 'Tomato Sauce', have: false },
         { name: 'Cheese', have: true },
       ],
+      prepTime: 10,
+      cookTime: 20,
+      nutritionalValues: '500 kcal, 20g protein, 60g carbs',
     },
     {
       id: '2',
@@ -63,6 +77,9 @@ export default function HomeScreen() {
         { name: 'Eggs', have: true },
         { name: 'Milk', have: false },
       ],
+      prepTime: 5,
+      cookTime: 10,
+      nutritionalValues: '350 kcal, 8g protein, 45g carbs',
     },
     {
       id: '3',
@@ -74,6 +91,9 @@ export default function HomeScreen() {
         { name: 'Tomato', have: true },
         { name: 'Cucumber', have: false },
       ],
+      prepTime: 8,
+      cookTime: 0,
+      nutritionalValues: '200 kcal, 5g protein, 10g carbs',
     },
   ];
 
@@ -90,6 +110,28 @@ export default function HomeScreen() {
     );
   }
 
+  // 3) Sorting
+  // Compute matching percentage for each recipe for sorting purposes
+  finalRecipes = finalRecipes.slice().sort((a, b) => {
+    // Calculate percentages
+    const aAvailable = a.ingredients.filter((ing) => ing.have).length;
+    const bAvailable = b.ingredients.filter((ing) => ing.have).length;
+    const aPercent = aAvailable / a.ingredients.length;
+    const bPercent = bAvailable / b.ingredients.length;
+    // Total time (prep + cook)
+    const aTotalTime = a.prepTime + a.cookTime;
+    const bTotalTime = b.prepTime + b.cookTime;
+
+    if (sortValue === 'match') {
+      // Descending order: higher matching percentage first
+      return bPercent - aPercent;
+    } else if (sortValue === 'time') {
+      // Ascending order: lower total time first
+      return aTotalTime - bTotalTime;
+    }
+    return 0;
+  });
+
   // Component to display each recipe as an attached drop-down tab
   const RecipeTab = ({ recipe }: { recipe: Recipe }) => {
     const [isExpanded, setIsExpanded] = useState(false);
@@ -98,16 +140,27 @@ export default function HomeScreen() {
     const totalCount = recipe.ingredients.length;
     const percentage = Math.round((availableCount / totalCount) * 100);
 
+    // Set a mild background tint based on percentage match
+    const bgColor =
+      percentage > 75
+        ? '#d4efdf' // light green
+        : percentage > 50
+        ? '#fcf3cf' // light yellow
+        : '#f5b7b1'; // light red
+
     return (
       <View style={styles.recipeContainer}>
         <TouchableOpacity onPress={() => setIsExpanded(!isExpanded)}>
-          <ThemedView style={styles.recipeTab}>
+          <ThemedView style={[styles.recipeTab, { backgroundColor: bgColor }]}>
             <ThemedText style={styles.recipeName}>{recipe.name}</ThemedText>
             <ThemedText style={styles.recipeDescription}>
               {recipe.description}
             </ThemedText>
             <ThemedText style={styles.recipePercentage}>
-              {percentage}% available
+              {percentage}% matching ingredients
+            </ThemedText>
+            <ThemedText style={styles.recipeTime}>
+              Prep: {recipe.prepTime}m, Cook: {recipe.cookTime}m
             </ThemedText>
           </ThemedView>
         </TouchableOpacity>
@@ -122,6 +175,10 @@ export default function HomeScreen() {
             <ThemedText style={styles.detailTitle}>Instructions:</ThemedText>
             <ThemedText style={styles.instructionText}>
               [Insert step-by-step cooking instructions here...]
+            </ThemedText>
+            <ThemedText style={styles.detailTitle}>Nutritional Values:</ThemedText>
+            <ThemedText style={styles.nutritionText}>
+              {recipe.nutritionalValues}
             </ThemedText>
           </ThemedView>
         )}
@@ -147,6 +204,7 @@ export default function HomeScreen() {
         />
       </ThemedView>
 
+      {/* Category Filter */}
       <DropDownPicker
         open={open}
         value={value}
@@ -159,6 +217,22 @@ export default function HomeScreen() {
         containerStyle={styles.dropdownContainer}
         dropDownContainerStyle={styles.dropdownListStyle}
         textStyle={styles.dropdownText}
+      />
+
+      {/* Sorting Options */}
+      <DropDownPicker
+        open={sortOpen}
+        value={sortValue}
+        items={sortItems}
+        setOpen={setSortOpen}
+        setValue={setSortValue}
+        setItems={setSortItems}
+        placeholder="Sort recipes..."
+        style={styles.dropdownStyle}
+        containerStyle={styles.dropdownContainer}
+        dropDownContainerStyle={styles.dropdownListStyle}
+        textStyle={styles.dropdownText}
+        zIndex={900} // ensure it appears above the recipe list
       />
 
       <FlatList
@@ -215,31 +289,35 @@ const styles = StyleSheet.create({
   recipeContainer: {
     marginBottom: 12,
     borderRadius: 8,
-    overflow: 'hidden', // Ensures the expanded content is clipped to the container edges
+    overflow: 'hidden', // Clipping for rounded corners
   },
   recipeTab: {
-    backgroundColor: '#333',
     padding: 12,
   },
   recipeName: {
-    color: '#fff',
+    color: '#000',
     fontSize: 18,
     fontWeight: '600',
   },
   recipeDescription: {
-    color: '#ddd',
+    color: '#333',
     fontSize: 14,
     marginVertical: 4,
   },
   recipePercentage: {
-    color: '#ccc',
+    color: '#555',
     fontSize: 14,
+  },
+  recipeTime: {
+    color: '#555',
+    fontSize: 14,
+    marginTop: 4,
   },
   recipeDetails: {
     backgroundColor: '#444',
     padding: 12,
     borderTopWidth: 1,
-    borderTopColor: '#555', // a border to visually separate header and details
+    borderTopColor: '#555',
   },
   detailTitle: {
     color: '#fff',
@@ -257,5 +335,10 @@ const styles = StyleSheet.create({
     color: '#ddd',
     fontSize: 14,
     marginTop: 8,
+  },
+  nutritionText: {
+    color: '#ddd',
+    fontSize: 14,
+    marginTop: 4,
   },
 });
