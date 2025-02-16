@@ -9,6 +9,7 @@ import 'react-native-reanimated';
 import { useColorScheme } from '@/hooks/useColorScheme';
 
 import { ThemeToggleProvider } from '@/components/ThemeToggleContext';
+import SavedRecipesProvider from '@/app/contexts/SavedRecipesContext';
 
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
@@ -31,16 +32,16 @@ export default function RootLayout() {
   }
 
   return (
-    <ThemeToggleProvider>
-    {/* This ThemeProvider is still using system colorScheme, but you can 
-        replace it or combine it with your manual toggle if you like */}
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="+not-found" />
-      </Stack>
-      <StatusBar style="auto" />
+      <ThemeToggleProvider>
+        <SavedRecipesProvider>
+          <Stack>
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen name="+not-found" />
+          </Stack>
+          <StatusBar style="auto" />
+        </SavedRecipesProvider>
+      </ThemeToggleProvider>
     </ThemeProvider>
-  </ThemeToggleProvider>
   );
 }

@@ -4,16 +4,155 @@ import PIL.Image
 import io
 import base64
 from google import genai
-from gemini_api import app as recipe_app
+import json
+import time
 
 app = Flask(__name__)
 CORS(app)
 
-model = "gemini-2.0-flash"
+model = "gemini-pro"  # For text generation
+vision_model = "gemini-2.0-flash"  # For image analysis
 client = genai.Client(api_key="AIzaSyC5Q2H6J1XhSKgvIDJa31H4vuAN9CE6HRo")
 
 def parse_foods(foods_txt):
     return [item.strip().lower() for item in foods_txt.split(',')]
+
+def generate_recipes(ingredients):
+    try:
+        # Check if there are any expiring ingredients
+        expiring_ingredients = [ing for ing in ingredients if ing.get('isExpiring')]
+        
+        ingredients_prompt = "Generate recipes using these ingredients:\n"
+        for ing in ingredients:
+            expiring = "(Expiring)" if ing.get('isExpiring') else ""
+            ingredients_prompt += f"- {ing['name']} (Quantity: {ing['amount']}) {expiring}\n"
+        
+        if not expiring_ingredients:
+            ingredients_prompt += "\nCreate 3 recipes using any of the available ingredients. "
+        else:
+            ingredients_prompt += "\nCreate 3 recipes prioritizing ingredients marked as (Expiring). "
+            
+        ingredients_prompt += (
+            "Return ONLY a JSON array of recipes with this exact structure:\n"
+            "[\n"
+            "  {\n"
+            '    "id": "recipe-1",\n'
+            '    "name": "Recipe Name",\n'
+            '    "category": "Breakfast/Lunch/Dinner",\n'
+            '    "description": "Brief description",\n'
+            '    "ingredients": [\n'
+            '      {"name": "Ingredient", "amount": "100", "unit": "g"}\n'
+            '    ],\n'
+            '    "instructions": ["step 1", "step 2"],\n'
+            '    "prepTime": 30,\n'
+            '    "cookTime": 20,\n'
+            '    "servings": 4,\n'
+            '    "dietary": ["Vegetarian", "Gluten-Free"],\n'
+            '    "requiredItems": ["item1", "item2"],\n'
+            '    "expiringSoon": false,\n'
+            '    "matchingPercentage": 75\n'
+            "  }\n"
+            "]\n"
+        )
+
+        print("Sending prompt to Gemini:", ingredients_prompt)
+
+        response = client.models.generate_content(
+            model=model,
+            contents=ingredients_prompt
+        )
+        
+        return response.text
+
+    except Exception as e:
+        print(f"Gemini API Error: {str(e)}")
+        return json.dumps([{
+            "id": f"error-{int(time.time())}",
+            "name": "Error Recipe",
+            "category": "Error",
+            "description": str(e),
+            "ingredients": [{"name": ing["name"], "amount": str(ing["amount"]), "unit": "piece"} for ing in ingredients],
+            "instructions": ["Could not generate recipe"],
+            "prepTime": 0,
+            "cookTime": 0,
+            "servings": 0,
+            "dietary": [],
+            "requiredItems": [],
+            "expiringSoon": False,
+            "matchingPercentage": 0
+        }])
+
+@app.route('/generate_recipes', methods=['POST'])
+def recipe_endpoint():
+    try:
+        data = request.json
+        ingredients = data.get('ingredients', [])
+        
+        print(f"Received ingredients: {ingredients}")
+        
+        recipes_response = generate_recipes(ingredients)
+        print(f"Raw Gemini response: {recipes_response}")
+
+        try:
+            # Parse the response to ensure it's valid JSON
+            parsed_recipes = json.loads(recipes_response)
+            
+            # Ensure the response matches the expected format
+            formatted_recipes = []
+            for recipe in parsed_recipes:
+                formatted_recipe = {
+                    "id": recipe.get("id", f"recipe-{int(time.time())}"),
+                    "name": recipe.get("name", "Untitled Recipe"),
+                    "category": recipe.get("category", "Other"),
+                    "description": recipe.get("description", "No description available"),
+                    "ingredients": recipe.get("ingredients", []),
+                    "instructions": recipe.get("instructions", []),
+                    "prepTime": recipe.get("prepTime", 0),
+                    "cookTime": recipe.get("cookTime", 0),
+                    "servings": recipe.get("servings", 4),
+                    "dietary": recipe.get("dietary", []),
+                    "requiredItems": recipe.get("requiredItems", []),
+                    "expiringSoon": recipe.get("expiringSoon", False),
+                    "matchingPercentage": recipe.get("matchingPercentage", 0)
+                }
+                formatted_recipes.append(formatted_recipe)
+
+            return jsonify({
+                'success': True,
+                'recipes': formatted_recipes
+            })
+
+        except json.JSONDecodeError as e:
+            print(f"JSON parse error: {e}")
+            print(f"Invalid JSON response: {recipes_response}")
+            
+            fallback_recipe = {
+                "id": f"error-{int(time.time())}",
+                "name": "Sample Recipe",
+                "category": "Dinner",
+                "description": "Failed to parse recipe data",
+                "ingredients": [{"name": ing["name"], "amount": str(ing["amount"]), "unit": "piece"} for ing in ingredients],
+                "instructions": ["Could not generate instructions"],
+                "prepTime": 0,
+                "cookTime": 0,
+                "servings": 0,
+                "dietary": [],
+                "requiredItems": [],
+                "expiringSoon": False,
+                "matchingPercentage": 0
+            }
+            
+            return jsonify({
+                'success': True,
+                'recipes': [fallback_recipe]
+            })
+        
+    except Exception as e:
+        print(f"Server error: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        })
 
 @app.route('/analyze_image', methods=['POST'])
 def analyze_image():
@@ -29,7 +168,7 @@ def analyze_image():
 
         # Send to Gemini for analysis
         food_response = client.models.generate_content(
-            model=model,
+            model=vision_model,
             contents=["Identify all the foods and the number of each food in the fridge.", image]
         )
 
@@ -57,9 +196,6 @@ def analyze_image():
             'success': False,
             'error': str(e)
         })
-
-# Register the recipe generation blueprint
-app.register_blueprint(recipe_app)
 
 # Add a route for the home page
 @app.route('/')
@@ -93,15 +229,24 @@ def home():
 @app.route('/api/analyze-fridge', methods=['POST'])
 def analyze_fridge():
     try:
+        # Check for image in multipart form data
         if 'image' not in request.files:
             return jsonify({"error": "No image provided"}), 400
         
-        image = PIL.Image.open(request.files['image'])
+        file = request.files['image']
+        if file.filename == '':
+            return jsonify({"error": "No selected file"}), 400
+            
+        # Ensure the file is an image
+        if not file.content_type.startswith('image/'):
+            return jsonify({"error": "File must be an image"}), 400
+        
+        image = PIL.Image.open(file)
         
         # Get food items from image using Gemini
         try:
             food_response = client.models.generate_content(
-                model=model,
+                model=vision_model,
                 contents=[
                     "You are a helpful assistant. Please identify and list all visible food items and their approximate quantities in this refrigerator image. Only describe what you can clearly see.",
                     image
@@ -113,10 +258,8 @@ def analyze_fridge():
             # Check if Gemini refused to analyze
             if "programmed to avoid" in foods_txt:
                 return jsonify({
-                    "fridge_contents": "Unable to analyze image. Please ensure the image shows food items clearly.",
-                    "matched_recipes": [],
-                    "ai_suggestions": "Please try again with a clear image of food items in your refrigerator."
-                })
+                    "error": "Unable to analyze image. Please ensure the image shows food items clearly."
+                }), 400
 
             # Continue with normal processing
             fridge_ingredients = parse_foods(foods_txt)
@@ -156,12 +299,51 @@ def analyze_fridge():
             })
             
         except Exception as e:
-            return jsonify({
-                "error": f"Failed to analyze image: {str(e)}"
-            }), 500
+            error_msg = f"Failed to analyze image: {str(e)}"
+            if request.headers.get('Accept', '').find('text/html') != -1:
+                return f"""
+                    <div class="section">
+                        <div class="section-title">Error:</div>
+                        <p>{error_msg}</p>
+                    </div>
+                """
+            return jsonify({"error": error_msg}), 500
 
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        error_msg = str(e)
+        if request.headers.get('Accept', '').find('text/html') != -1:
+            return f"""
+                <div class="section">
+                    <div class="section-title">Error:</div>
+                    <p>{error_msg}</p>
+                </div>
+            """
+        return jsonify({"error": error_msg}), 500
+
+@app.route('/api/recipes', methods=['GET'])
+def get_recipes():
+    # Use your existing ingredients for testing
+    test_ingredients = [
+        {"name": "Chicken", "amount": 2, "isExpiring": True},
+        {"name": "Sweet Potato", "amount": 1},
+        {"name": "Carrots", "amount": 6}
+    ]
+    
+    # Use your existing generate_recipes function
+    recipes_response = generate_recipes(test_ingredients)
+    
+    try:
+        parsed_recipes = json.loads(recipes_response)
+        return jsonify({
+            "success": True,
+            "recipes": parsed_recipes
+        })
+    except json.JSONDecodeError as e:
+        print(f"JSON parse error: {e}")
+        return jsonify({
+            "success": False,
+            "error": "Failed to parse recipes"
+        })
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)

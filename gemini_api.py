@@ -1,10 +1,11 @@
 from google import genai
 import json
 from flask import Blueprint, request, jsonify
+import time
 
 app = Blueprint('recipes', __name__)
 model = "gemini-pro"  # Changed to gemini-pro since we're only doing text
-client = genai.Client(api_key="AIzaSyBG764Zn4BcmFCw2ZqkF8VEUwLYmUEZYvE")
+client = genai.Client(api_key="AIzaSyC5Q2H6J1XhSKgvIDJa31H4vuAN9CE6HRo")
 
 def generate_recipes(ingredients):
     try:
@@ -25,14 +26,21 @@ def generate_recipes(ingredients):
             "Return ONLY a JSON array of recipes with this exact structure:\n"
             "[\n"
             "  {\n"
+            '    "id": "recipe-1",\n'
             '    "name": "Recipe Name",\n'
             '    "category": "Breakfast/Lunch/Dinner",\n'
             '    "description": "Brief description",\n'
-            '    "ingredients": ["ingredient 1", "ingredient 2"],\n'
+            '    "ingredients": [\n'
+            '      {"name": "Ingredient", "amount": "100", "unit": "g"}\n'
+            '    ],\n'
             '    "instructions": ["step 1", "step 2"],\n'
             '    "prepTime": 30,\n'
             '    "cookTime": 20,\n'
-            '    "nutritionalValues": "Calories, protein, etc"\n'
+            '    "servings": 4,\n'
+            '    "dietary": ["Vegetarian", "Gluten-Free"],\n'
+            '    "requiredItems": ["item1", "item2"],\n'
+            '    "expiringSoon": false,\n'
+            '    "matchingPercentage": 75\n'
             "  }\n"
             "]\n"
         )
@@ -49,14 +57,19 @@ def generate_recipes(ingredients):
     except Exception as e:
         print(f"Gemini API Error: {str(e)}")
         return json.dumps([{
+            "id": f"error-{int(time.time())}",
             "name": "Error Recipe",
             "category": "Error",
             "description": str(e),
-            "ingredients": [],
+            "ingredients": [{"name": ing["name"], "amount": str(ing["amount"]), "unit": "piece"} for ing in ingredients],
             "instructions": ["Could not generate recipe"],
             "prepTime": 0,
             "cookTime": 0,
-            "nutritionalValues": "N/A"
+            "servings": 0,
+            "dietary": [],
+            "requiredItems": [],
+            "expiringSoon": False,
+            "matchingPercentage": 0
         }])
 
 @app.route('/generate_recipes', methods=['POST'])
@@ -73,26 +86,55 @@ def recipe_endpoint():
         try:
             # Parse the response to ensure it's valid JSON
             parsed_recipes = json.loads(recipes_response)
-            # Don't stringify again, just return the parsed object
+            
+            # Ensure the response matches the expected format
+            formatted_recipes = []
+            for recipe in parsed_recipes:
+                formatted_recipe = {
+                    "id": recipe.get("id", f"recipe-{int(time.time())}"),
+                    "name": recipe.get("name", "Untitled Recipe"),
+                    "category": recipe.get("category", "Other"),
+                    "description": recipe.get("description", "No description available"),
+                    "ingredients": recipe.get("ingredients", []),
+                    "instructions": recipe.get("instructions", []),
+                    "prepTime": recipe.get("prepTime", 0),
+                    "cookTime": recipe.get("cookTime", 0),
+                    "servings": recipe.get("servings", 4),
+                    "dietary": recipe.get("dietary", []),
+                    "requiredItems": recipe.get("requiredItems", []),
+                    "expiringSoon": recipe.get("expiringSoon", False),
+                    "matchingPercentage": recipe.get("matchingPercentage", 0)
+                }
+                formatted_recipes.append(formatted_recipe)
+
             return jsonify({
                 'success': True,
-                'recipes': parsed_recipes  # Return the parsed object directly
+                'recipes': formatted_recipes
             })
+
         except json.JSONDecodeError as e:
             print(f"JSON parse error: {e}")
-            fallback_recipe = [{
+            print(f"Invalid JSON response: {recipes_response}")
+            
+            fallback_recipe = {
+                "id": f"error-{int(time.time())}",
                 "name": "Sample Recipe",
                 "category": "Dinner",
-                "description": recipes_response[:100] + "...",
-                "ingredients": [f"{ing['name']} ({ing['amount']})" for ing in ingredients],
+                "description": "Failed to parse recipe data",
+                "ingredients": [{"name": ing["name"], "amount": str(ing["amount"]), "unit": "piece"} for ing in ingredients],
                 "instructions": ["Could not generate instructions"],
                 "prepTime": 0,
                 "cookTime": 0,
-                "nutritionalValues": "N/A"
-            }]
+                "servings": 0,
+                "dietary": [],
+                "requiredItems": [],
+                "expiringSoon": False,
+                "matchingPercentage": 0
+            }
+            
             return jsonify({
                 'success': True,
-                'recipes': fallback_recipe  # Return the fallback object directly
+                'recipes': [fallback_recipe]
             })
         
     except Exception as e:

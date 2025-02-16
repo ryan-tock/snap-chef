@@ -173,50 +173,25 @@ export default function IngredientsScreen() {
     setEditedAmount('');
   };
 
-  const generateRecipes = async () => {
+  const fetchRecipes = async (ingredients) => {
     try {
-      setIsLoading(true);
-      const simplifiedIngredients = ingredients.map(ing => ({
-        name: ing.name,
-        amount: ing.amount,
-        isExpiring: ing.isExpiring || false
-      }));
-
-      console.log('Sending ingredients:', JSON.stringify(simplifiedIngredients)); // Debug log
-
-      const response = await fetch(`${API_URL}/generate_recipes`, {
+      const response = await fetch('http://your-flask-server/generate_recipes', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ ingredients: simplifiedIngredients })
+        body: JSON.stringify({ ingredients })
       });
-
-      const text = await response.text(); // Get raw response first
-      console.log('Raw response:', text); // Debug log
-
-      try {
-        const data = JSON.parse(text);
-        if (data.success) {
-          router.push({
-            pathname: '/recipes',
-            params: { 
-              recipes: data.recipes,
-              ingredients: JSON.stringify(ingredients)
-            }
-          });
-        } else {
-          Alert.alert('Error', data.error || 'Failed to generate recipes');
-        }
-      } catch (parseError) {
-        console.error('Parse error:', parseError);
-        Alert.alert('Error', 'Invalid response from server');
+      const data = await response.json();
+      
+      if (data.success) {
+        router.push({
+          pathname: '/recipes',
+          params: { recipes: JSON.stringify(data) }
+        });
       }
     } catch (error) {
-      console.error('Connection error:', error);
-      Alert.alert('Error', 'Failed to connect to server');
-    } finally {
-      setIsLoading(false);
+      console.error('Failed to fetch recipes:', error);
     }
   };
 
@@ -260,7 +235,7 @@ export default function IngredientsScreen() {
         <View style={styles.headerButtons}>
           <TouchableOpacity 
             style={styles.generateButton}
-            onPress={generateRecipes}
+            onPress={() => fetchRecipes(ingredients)}
           >
             <MaterialIcons name="restaurant" size={24} color="white" />
             <ThemedText style={styles.generateButtonText}>Generate Recipes</ThemedText>

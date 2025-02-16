@@ -36,8 +36,52 @@ function RecipesScreen(): React.JSX.Element {
   // Load recipes from route parameters if provided; otherwise, use sample recipes.
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   useEffect(() => {
-    if (params.recipes) {
-      setRecipes(JSON.parse(params.recipes as string));
+    if (!params.recipes) {
+      setRecipes([]); // Reset to empty if no recipes provided
+      return;
+    }
+
+    try {
+      // First, ensure we're working with a string
+      const recipesString = typeof params.recipes === 'string' 
+        ? params.recipes 
+        : JSON.stringify(params.recipes);
+      
+      // Parse the outer response
+      const parsed = JSON.parse(recipesString);
+      
+      // Check if we have a recipes array in the response
+      if (parsed.success && Array.isArray(parsed.recipes)) {
+        // Transform the recipes to match our interface
+        const processedRecipes = parsed.recipes.map((recipe: any) => ({
+          id: recipe.id,
+          title: recipe.name,
+          description: recipe.description,
+          prepTime: recipe.prepTime,
+          cookTime: recipe.cookTime,
+          servings: recipe.servings,
+          ingredients: Array.isArray(recipe.ingredients) 
+            ? recipe.ingredients.map((ing: any) => 
+                typeof ing === 'string' 
+                  ? ing 
+                  : `${ing.name} (${ing.amount} ${ing.unit})`
+              )
+            : [],
+          instructions: recipe.instructions,
+          dietary: recipe.dietary || [],
+          requiredItems: recipe.requiredItems || [],
+          expiringSoon: recipe.expiringSoon || false,
+          matchingPercentage: recipe.matchingPercentage || 0
+        }));
+
+        setRecipes(processedRecipes);
+      } else {
+        console.error('Invalid recipes data structure:', parsed);
+        setRecipes([]);
+      }
+    } catch (e) {
+      console.error('Failed to parse recipes:', e);
+      setRecipes([]);
     }
   }, [params.recipes]);
 
@@ -140,70 +184,18 @@ function RecipesScreen(): React.JSX.Element {
   // --- Option to toggle between All Recipes and Saved Recipes ---
   const [showSaved, setShowSaved] = useState(false);
 
-  // --- Sample Recipes ---
-  const sampleRecipes: Recipe[] = [
-    {
-      id: 'r1',
-      title: 'Pasta Primavera',
-      description: 'A vibrant pasta dish with fresh veggies.',
-      prepTime: 15,
-      cookTime: 20,
-      servings: 4,
-      ingredients: ['Pasta', 'Tomatoes', 'Bell Peppers', 'Zucchini'],
-      instructions: [
-        'Boil pasta until al dente.',
-        'Sauté vegetables with garlic and olive oil.',
-        'Mix pasta with veggies, season with salt and pepper.'
-      ],
-      dietary: ['Vegetarian'],
-      requiredItems: ['Pasta', 'Tomatoes'],
-      expiringSoon: false,
-      matchingPercentage: 75,
-    },
-    {
-      id: 'r2',
-      title: 'Hearty Pancakes',
-      description: 'Fluffy pancakes perfect for breakfast.',
-      prepTime: 10,
-      cookTime: 5,
-      servings: 2,
-      ingredients: ['Flour', 'Eggs', 'Milk', 'Maple Syrup'],
-      instructions: [
-        'Mix flour, eggs, and milk until smooth.',
-        'Cook on a griddle until bubbles form, flip and cook the other side.',
-        'Serve with maple syrup.'
-      ],
-      dietary: [],
-      requiredItems: ['Eggs', 'Milk'],
-      expiringSoon: true,
-      matchingPercentage: 50,
-    },
-    {
-      id: 'r3',
-      title: 'Fresh Garden Salad',
-      description: 'A crisp and refreshing salad.',
-      prepTime: 8,
-      cookTime: 0,
-      servings: 3,
-      ingredients: ['Lettuce', 'Tomatoes', 'Cucumber', 'Olive Oil', 'Lemon Juice'],
-      instructions: [
-        'Chop all vegetables.',
-        'Toss with olive oil and lemon juice.',
-        'Season with salt and pepper.'
-      ],
-      dietary: ['Vegan', 'Gluten-Free'],
-      requiredItems: ['Lettuce', 'Tomatoes'],
-      expiringSoon: false,
-      matchingPercentage: 90,
-    },
-  ];
+ 
 
-  const allRecipes: Recipe[] = recipes.length > 0 ? recipes : sampleRecipes;
+  // Add some debug logging to help track the state
+  useEffect(() => {
+    console.log('Parsed recipes:', recipes);
+    console.log('Using sample recipes:', recipes.length === 0);
+  }, [recipes]);
 
   // --- Apply Filter (by title) ---
   const filteredByFilter = filterBy === 'All' 
-    ? allRecipes 
-    : allRecipes.filter(recipe => recipe.title.toLowerCase().includes(filterBy.toLowerCase()));
+    ? recipes 
+    : recipes.filter((recipe: Recipe) => recipe.title.toLowerCase().includes(filterBy.toLowerCase()));
 
   // --- Apply Extra Filter Panel Options ---
   let filteredByFilters = filteredByFilter;
