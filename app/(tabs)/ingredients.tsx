@@ -8,7 +8,8 @@ import {
   Platform,
   FlatList,
   Alert,
-  Modal 
+  Modal,
+  ActivityIndicator
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -176,15 +177,10 @@ export default function IngredientsScreen() {
     setEditedAmount('');
   };
 
-  const fetchRecipes = async (ingredients) => {
+  const fetchRecipes = async (ingredients: Ingredient[]) => {
     try {
-      const response = await fetch('http://your-flask-server/generate_recipes', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ ingredients })
-      });
+      setIsLoading(true);
+      const response = await fetch(`${API_URL}/api/recipes?ingredients=${JSON.stringify(ingredients)}`);
       const data = await response.json();
       
       if (data.success) {
@@ -195,6 +191,9 @@ export default function IngredientsScreen() {
       }
     } catch (error) {
       console.error('Failed to fetch recipes:', error);
+      Alert.alert('Error', 'Failed to fetch recipes');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -499,6 +498,13 @@ export default function IngredientsScreen() {
           <MaterialIcons name="add" size={24} color="white" />
         </TouchableOpacity>
       </View>
+      
+      {isLoading && (
+        <View style={styles.loadingOverlay}>
+          <ActivityIndicator size="large" color={Colors[currentColorScheme].tint} />
+          <ThemedText style={styles.loadingText}>Generating Recipes...</ThemedText>
+        </View>
+      )}
     </SafeAreaView>
   );
 }
@@ -678,5 +684,24 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 16,
     fontWeight: '600',
+  },
+  loadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 9999,
+    elevation: 5,
+    height: '100%',
+    width: '100%',
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 16,
+    color: 'white',
   },
 });

@@ -12,7 +12,7 @@ CORS(app)
 
 model = "gemini-pro"  # For text generation
 vision_model = "gemini-2.0-flash"  # For image analysis
-client = genai.Client(api_key="AIzaSyC5Q2H6J1XhSKgvIDJa31H4vuAN9CE6HRo")
+client = genai.Client(api_key="AIzaSyBG764Zn4BcmFCw2ZqkF8VEUwLYmUEZYvE")
 
 def parse_foods(foods_txt):
     return [item.strip().lower() for item in foods_txt.split(',')]
@@ -22,7 +22,7 @@ def generate_recipes(ingredients):
         # Check if there are any expiring ingredients
         expiring_ingredients = [ing for ing in ingredients if ing.get('isExpiring')]
         
-        ingredients_prompt = "Generate recipes using these ingredients:\n"
+        ingredients_prompt = "Generate recipes using these ingredients. Count the quantities in individual pieces, not in bunches or in groups, or other non-individual units.:\n"
         for ing in ingredients:
             expiring = "(Expiring)" if ing.get('isExpiring') else ""
             ingredients_prompt += f"- {ing['name']} (Quantity: {ing['amount']}) {expiring}\n"
@@ -322,18 +322,15 @@ def analyze_fridge():
 
 @app.route('/api/recipes', methods=['GET'])
 def get_recipes():
-    # Use your existing ingredients for testing
-    test_ingredients = [
-        {"name": "Chicken", "amount": 2, "isExpiring": True},
-        {"name": "Sweet Potato", "amount": 1},
-        {"name": "Carrots", "amount": 6}
-    ]
-    
-    # Use your existing generate_recipes function
-    recipes_response = generate_recipes(test_ingredients)
-    
     try:
+        # Get ingredients from the previous analyze_fridge call
+        ingredients_response = request.args.get('ingredients', '[]')
+        ingredients = json.loads(ingredients_response)
+        
+        # Generate recipes using the ingredients
+        recipes_response = generate_recipes(ingredients)
         parsed_recipes = json.loads(recipes_response)
+        
         return jsonify({
             "success": True,
             "recipes": parsed_recipes
