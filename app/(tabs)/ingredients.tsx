@@ -16,6 +16,7 @@ import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 
 interface Ingredient {
+  id: string;
   name: string;
   amount: number;
   unit?: string;
@@ -45,10 +46,10 @@ export default function IngredientsScreen() {
   }, [params.ingredients]);
 
   // Increment / Decrement an ingredient's amount
-  const updateAmount = (index: number, increment: boolean) => {
+  const updateAmount = (id: string, increment: boolean) => {
     setIngredients((current) =>
-      current.map((item, idx) =>
-        idx === index
+      current.map((item) =>
+        item.id === id
           ? {
               ...item,
               amount: increment ? item.amount + 1 : Math.max(0, item.amount - 1),
@@ -116,8 +117,8 @@ export default function IngredientsScreen() {
         {/* Ingredients List */}
         <FlatList
           data={finalIngredients}
-          keyExtractor={(_, index) => index.toString()}
-          renderItem={({ item, index }) => (
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => (
             <View style={styles.ingredientContainer}>
               <View style={styles.labelContainer}>
                 <ThemedText style={styles.ingredientName}>{item.name}</ThemedText>
@@ -137,14 +138,14 @@ export default function IngredientsScreen() {
 
               <View style={styles.buttonsContainer}>
                 <TouchableOpacity
-                  onPress={() => updateAmount(index, false)}
+                  onPress={() => updateAmount(item.id, false)}
                   style={styles.button}
                 >
                   <MaterialIcons name="remove" size={24} color="#2E7D32" />
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                  onPress={() => updateAmount(index, true)}
+                  onPress={() => updateAmount(item.id, true)}
                   style={styles.button}
                 >
                   <MaterialIcons name="add" size={24} color="#2E7D32" />
