@@ -23,6 +23,7 @@ interface Recipe {
 }
 
 interface Ingredient {
+  id: string;
   name: string;
   amount: number;
   unit?: string;
@@ -56,21 +57,24 @@ const ApiTest = () => {
           
           if (numbers) {
             if (numbers.length === 2) {
-              // If range (e.g., "10-15"), take average
               amount = Math.round((parseInt(numbers[0]) + parseInt(numbers[1])) / 2);
             } else {
-              // Single number
               amount = parseInt(numbers[0]);
+            }
+          } else {
+            // Handle text quantities like "a bag" or "a small amount"
+            amount = 1;
+            if (quantity.toLowerCase().includes('bag')) {
+              unit = 'bag';
+            } else if (quantity.toLowerCase().includes('cup')) {
+              unit = 'cup';
+            } else {
+              unit = quantity.trim();
             }
           }
 
-          // Handle special cases like "A small amount" or "A dollop"
-          if (!amount) {
-            amount = 1;
-            unit = quantity.trim();
-          }
-
           ingredientsList.push({
+            id: Math.random().toString(), // Add unique ID
             name: cleanName,
             amount: amount,
             unit: unit || 'pieces'
