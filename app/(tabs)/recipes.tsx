@@ -539,8 +539,8 @@ const styles = StyleSheet.create({
     color: '#555',
     marginTop: 4,
   },
-<<<<<<< HEAD
-=======
+HEAD
+
   subtab: {
     marginTop: 8,
     backgroundColor: '#f0f0f0', // Grey white background for subtabs
@@ -571,9 +571,4 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: '#555',
   },
-<<<<<<< HEAD
->>>>>>> bf46308f3d91d345d560e387a0911791626d68a9
 });
-=======
-});
->>>>>>> d9cb9103c9a1365766be8c153dfbe788b589d4c1
