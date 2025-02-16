@@ -1,7 +1,6 @@
 import { Tabs } from 'expo-router';
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Platform } from 'react-native';
-import { useRouter } from 'expo-router';
 
 import { HapticTab } from '@/components/HapticTab';
 import TabBarBackground from '@/components/ui/TabBarBackground';
@@ -14,27 +13,6 @@ import Entypo from '@expo/vector-icons/Entypo';
 export default function TabLayout() {
   const { isDark } = useThemeToggle();
   const currentColorScheme = isDark ? 'dark' : 'light';
-  const router = useRouter();
-
-  useEffect(() => {
-    const fetchRecipes = async () => {
-      try {
-        const response = await fetch('http://10.37.163.63:5000/api/recipes');
-        const data = await response.json();
-        
-        if (data.success) {
-          router.push({
-            pathname: '/recipes',
-            params: { recipes: JSON.stringify(data) }
-          });
-        }
-      } catch (error) {
-        console.error('Failed to fetch recipes:', error);
-      }
-    };
-
-    fetchRecipes();
-  }, []);
 
   return (
     <Tabs

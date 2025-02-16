@@ -179,8 +179,40 @@ export default function IngredientsScreen() {
 
   const fetchRecipes = async (ingredients: Ingredient[]) => {
     try {
+      if (ingredients.length === 0) {
+        Alert.alert('Error', 'No ingredients to generate recipes from');
+        return;
+      }
+
       setIsLoading(true);
-      const response = await fetch(`${API_URL}/api/recipes?ingredients=${JSON.stringify(ingredients)}`);
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000);
+
+      // Send as POST to /generate_recipes instead of /api/recipes
+      const response = await fetch(
+        `${API_URL}/generate_recipes`,
+        {
+          signal: controller.signal,
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ 
+            ingredients: ingredients.map(ing => ({
+              name: ing.name,
+              amount: ing.amount,
+              isExpiring: ing.isExpiring || false
+            }))
+          })
+        }
+      );
+
+      clearTimeout(timeoutId);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
       const data = await response.json();
       
       if (data.success) {
@@ -188,10 +220,15 @@ export default function IngredientsScreen() {
           pathname: '/recipes',
           params: { recipes: JSON.stringify(data) }
         });
+      } else {
+        throw new Error(data.error || 'Failed to generate recipes');
       }
     } catch (error) {
       console.error('Failed to fetch recipes:', error);
-      Alert.alert('Error', 'Failed to fetch recipes');
+      Alert.alert(
+        'Error',
+        error instanceof Error ? error.message : 'Failed to generate recipes. Please try again.'
+      );
     } finally {
       setIsLoading(false);
     }
@@ -312,7 +349,7 @@ export default function IngredientsScreen() {
                   onPress={() => updateAmount(item.id, false)}
                   style={[styles.button, { backgroundColor: Colors[currentColorScheme].tint }]}
                 >
-                  <MaterialIcons name="remove" size={24} color="#fff" />
+                  <MaterialIcons name="remove" size={24} color={Colors[currentColorScheme].background} />
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -331,7 +368,7 @@ export default function IngredientsScreen() {
                   onPress={() => updateAmount(item.id, true)}
                   style={[styles.button, { backgroundColor: Colors[currentColorScheme].tint }]}
                 >
-                  <MaterialIcons name="add" size={24} color="#fff" />
+                  <MaterialIcons name="add" size={24} color={Colors[currentColorScheme].background} />
                 </TouchableOpacity>
 
                 <TouchableOpacity

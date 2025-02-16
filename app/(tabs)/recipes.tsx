@@ -5,12 +5,15 @@ import {
   TextInput,
   Platform,
   FlatList,
-  TouchableOpacity
+  TouchableOpacity,
+  Alert
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useLocalSearchParams } from 'expo-router';
 import React, { useState, useEffect } from 'react';
 import DropDownPicker from 'react-native-dropdown-picker';
+import { useAuth } from '@/components/AuthContext';
+import { router } from 'expo-router';
 
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
@@ -190,7 +193,8 @@ function RecipesScreen(): React.JSX.Element {
   // --- Option to toggle between All Recipes and Saved Recipes ---
   const [showSaved, setShowSaved] = useState(false);
 
- 
+  // Add auth context near other state
+  const { user, logout } = useAuth();
 
   // Add some debug logging to help track the state
   useEffect(() => {
@@ -380,6 +384,33 @@ function RecipesScreen(): React.JSX.Element {
       ]}
     >
       <View style={styles.content}>
+        {/* User Section */}
+        <View style={styles.userSection}>
+          {user ? (
+            <>
+              <ThemedText style={[styles.username, { color: Colors[currentColorScheme].text }]}>
+                {user.username}
+              </ThemedText>
+              <TouchableOpacity 
+                style={styles.logoutButton}
+                onPress={() => {
+                  logout();
+                  Alert.alert('Success', 'Logged out successfully');
+                }}
+              >
+                <MaterialIcons name="logout" size={24} color={Colors[currentColorScheme].tint} />
+              </TouchableOpacity>
+            </>
+          ) : (
+            <TouchableOpacity 
+              style={styles.loginButton}
+              onPress={() => router.push('/login')}
+            >
+              <ThemedText style={styles.loginText}>Login</ThemedText>
+            </TouchableOpacity>
+          )}
+        </View>
+
         {/* Header with Filter and Sort Section */}
         <View style={styles.headerContainer}>
           {/* Filter Button */}
@@ -700,5 +731,30 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 18,
+  },
+  userSection: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    paddingVertical: 8,
+    marginBottom: 8,
+  },
+  username: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginRight: 12,
+  },
+  logoutButton: {
+    padding: 8,
+  },
+  loginButton: {
+    backgroundColor: Colors.light.tint,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  loginText: {
+    color: 'white',
+    fontWeight: '600',
   },
 });

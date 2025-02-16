@@ -5,7 +5,7 @@ import time
 
 app = Blueprint('recipes', __name__)
 model = "gemini-pro"  # Changed to gemini-pro since we're only doing text
-client = genai.Client(api_key="AIzaSyBG764Zn4BcmFCw2ZqkF8VEUwLYmUEZYvE")
+client = genai.Client(api_key="AIzaSyC5Q2H6J1XhSKgvIDJa31H4vuAN9CE6HRo")
 
 def generate_recipes(ingredients):
     try:
