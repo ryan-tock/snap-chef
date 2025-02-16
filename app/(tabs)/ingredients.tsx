@@ -47,14 +47,14 @@ export default function IngredientsScreen() {
 
   // Increment / Decrement an ingredient's amount
   const updateAmount = (id: string, increment: boolean) => {
-    setIngredients((current) =>
-      current.map((item) =>
-        item.id === id
+    setIngredients(prevIngredients => 
+      prevIngredients.map(ingredient => 
+        ingredient.id === id
           ? {
-              ...item,
-              amount: increment ? item.amount + 1 : Math.max(0, item.amount - 1),
+              ...ingredient,
+              amount: increment ? ingredient.amount + 1 : Math.max(0, ingredient.amount - 1),
             }
-          : item
+          : ingredient
       )
     );
   };
@@ -117,7 +117,7 @@ export default function IngredientsScreen() {
         {/* Ingredients List */}
         <FlatList
           data={finalIngredients}
-          keyExtractor={(item) => item.id}
+          keyExtractor={item => item.id}
           renderItem={({ item }) => (
             <View style={styles.ingredientContainer}>
               <View style={styles.labelContainer}>

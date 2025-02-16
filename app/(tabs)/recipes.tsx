@@ -30,10 +30,20 @@ interface Recipe {
   nutritionalValues: string; // e.g., "500 kcal, 20g protein, etc."
 }
 
+// Custom component for the sort icon (three lines aligned to the left)
+const SortIcon = () => (
+  <View style={styles.sortIconContainer}>
+    <View style={styles.sortLineTop} />
+    <View style={styles.sortLineMiddle} />
+    <View style={styles.sortLineMid} />
+    <View style={styles.sortLineBottom} />
+  </View>
+);
+
 export default function HomeScreen() {
   const [searchQuery, setSearchQuery] = useState('');
 
-  // DropDownPicker for filtering categories
+  // DropDownPicker states for filtering categories
   const [open, setOpen] = useState(false);
   const [value, setValue] = useState('all'); // Current filter value
   const [items, setItems] = useState([
@@ -43,13 +53,13 @@ export default function HomeScreen() {
     { label: 'Dinner', value: 'Dinner' },
   ]);
 
-  // DropDownPicker for sorting recipes
+  // Sort options using a custom dropdown
   const [sortOpen, setSortOpen] = useState(false);
   const [sortValue, setSortValue] = useState('match'); // 'match' or 'time'
-  const [sortItems, setSortItems] = useState([
+  const sortItems = [
     { label: 'Matching Ingredients', value: 'match' },
     { label: 'Total Time', value: 'time' },
-  ]);
+  ];
 
   // Example list of recipes with additional properties
   const recipes: Recipe[] = [
@@ -111,9 +121,8 @@ export default function HomeScreen() {
   }
 
   // 3) Sorting
-  // Compute matching percentage for each recipe for sorting purposes
   finalRecipes = finalRecipes.slice().sort((a, b) => {
-    // Calculate percentages
+    // Calculate percentages for matching ingredients
     const aAvailable = a.ingredients.filter((ing) => ing.have).length;
     const bAvailable = b.ingredients.filter((ing) => ing.have).length;
     const aPercent = aAvailable / a.ingredients.length;
@@ -176,7 +185,9 @@ export default function HomeScreen() {
             <ThemedText style={styles.instructionText}>
               [Insert step-by-step cooking instructions here...]
             </ThemedText>
-            <ThemedText style={styles.detailTitle}>Nutritional Values:</ThemedText>
+            <ThemedText style={styles.detailTitle}>
+              Nutritional Values:
+            </ThemedText>
             <ThemedText style={styles.nutritionText}>
               {recipe.nutritionalValues}
             </ThemedText>
@@ -188,21 +199,25 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title" style={styles.titleText}>
-          Recipes
-        </ThemedText>
-      </ThemedView>
-
-      <ThemedView style={styles.searchContainer}>
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Search recipes..."
-          placeholderTextColor="#777"
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-        />
-      </ThemedView>
+      {/* Header: Search and Sort */}
+      <View style={styles.headerContainer}>
+        <View style={styles.searchContainer}>
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search recipes..."
+            placeholderTextColor="#777"
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
+        </View>
+        <TouchableOpacity
+          style={styles.sortButton}
+          onPress={() => setSortOpen(!sortOpen)}
+        >
+          <ThemedText style={styles.sortButtonLabel}>Sort</ThemedText>
+          <SortIcon />
+        </TouchableOpacity>
+      </View>
 
       {/* Category Filter */}
       <DropDownPicker
@@ -219,21 +234,23 @@ export default function HomeScreen() {
         textStyle={styles.dropdownText}
       />
 
-      {/* Sorting Options */}
-      <DropDownPicker
-        open={sortOpen}
-        value={sortValue}
-        items={sortItems}
-        setOpen={setSortOpen}
-        setValue={setSortValue}
-        setItems={setSortItems}
-        placeholder="Sort recipes..."
-        style={styles.dropdownStyle}
-        containerStyle={styles.dropdownContainer}
-        dropDownContainerStyle={styles.dropdownListStyle}
-        textStyle={styles.dropdownText}
-        zIndex={900} // ensure it appears above the recipe list
-      />
+      {/* Custom Sort Dropdown */}
+      {sortOpen && (
+        <View style={styles.sortDropdown}>
+          {sortItems.map((item) => (
+            <TouchableOpacity
+              key={item.value}
+              onPress={() => {
+                setSortValue(item.value);
+                setSortOpen(false);
+              }}
+              style={styles.sortDropdownItem}
+            >
+              <ThemedText>{item.label}</ThemedText>
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
 
       <FlatList
         data={finalRecipes}
@@ -250,18 +267,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#000', // Dark background
     padding: 12,
   },
-  titleContainer: {
+  headerContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 12,
   },
-  titleText: {
-    color: '#fff', // Title color on dark background
-    fontSize: 24,
-    fontWeight: 'bold',
-  },
   searchContainer: {
-    marginBottom: 12,
+    flex: 1,
   },
   searchInput: {
     borderWidth: 1,
@@ -271,9 +283,47 @@ const styles = StyleSheet.create({
     paddingVertical: Platform.OS === 'ios' ? 12 : 8,
     color: '#fff',
   },
+  sortButton: {
+    marginLeft: 8,
+    padding: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  sortButtonLabel: {
+    fontSize: 14,
+    color: '#fff',
+    marginRight: 4, // Small space between label and icon
+  },
+  // Custom sort icon styles with adjusted dimensions and left alignment
+  sortIconContainer: {
+    alignItems: 'flex-start', // Align lines to the left
+  },
+  sortLineTop: {
+    width: 18,
+    height: 2,
+    backgroundColor: '#fff',
+    marginBottom: 2,
+  },
+  sortLineMiddle: {
+    width: 16,
+    height: 2,
+    backgroundColor: '#fff',
+    marginBottom: 2,
+  },  
+  sortLineMid: {
+    width: 14,
+    height: 2,
+    backgroundColor: '#fff',
+    marginBottom: 2,
+  },
+  sortLineBottom: {
+    width: 12,
+    height: 2,
+    backgroundColor: '#fff',
+  },
   dropdownContainer: {
     marginBottom: 12,
-    zIndex: 1000, // Ensure dropdown appears above other elements
+    zIndex: 1000,
   },
   dropdownStyle: {
     backgroundColor: '#111',
@@ -286,10 +336,23 @@ const styles = StyleSheet.create({
   dropdownText: {
     color: '#fff',
   },
+  sortDropdown: {
+    position: 'absolute',
+    top: 60, // Adjust based on your header height
+    right: 12,
+    backgroundColor: '#111',
+    borderRadius: 8,
+    padding: 8,
+    zIndex: 1100,
+  },
+  sortDropdownItem: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+  },
   recipeContainer: {
     marginBottom: 12,
     borderRadius: 8,
-    overflow: 'hidden', // Clipping for rounded corners
+    overflow: 'hidden',
   },
   recipeTab: {
     padding: 12,
