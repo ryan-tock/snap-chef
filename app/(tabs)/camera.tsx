@@ -2,7 +2,7 @@ import { useRouter } from 'expo-router';
 
 // ... existing camera imports and setup ...
 
-const CameraScreen = () => {
+export default function CameraScreen() {
   const router = useRouter();
 
   const takePicture = async () => {
@@ -21,4 +21,4 @@ const CameraScreen = () => {
   };
 
   // ... rest of your camera screen code ...
-}; 
+} 

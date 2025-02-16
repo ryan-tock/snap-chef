@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { SafeAreaView, ScrollView, StyleSheet, TextInput, Platform } from 'react-native';
+import { SafeAreaView, ScrollView, StyleSheet, TextInput, Platform, FlatList } from 'react-native';
 import DropDownPicker from 'react-native-dropdown-picker';
 
 import { ThemedText } from '@/components/ThemedText';
@@ -40,49 +40,46 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollMenu}>
-        {/* Title */}
-        <ThemedView style={styles.titleContainer}>
-          <ThemedText type="title" style={styles.titleText}>Recipes</ThemedText>
-        </ThemedView>
+      <ThemedView style={styles.titleContainer}>
+        <ThemedText type="title" style={styles.titleText}>Recipes</ThemedText>
+      </ThemedView>
 
-        {/* Search Bar */}
-        <ThemedView style={styles.searchContainer}>
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search recipes..."
-            placeholderTextColor="#777"
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-          />
-        </ThemedView>
-
-        {/* Dropdown Menu for Filters */}
-        <DropDownPicker
-          open={open}
-          value={value}
-          items={items}
-          setOpen={setOpen}
-          setValue={setValue}
-          setItems={setItems}
-          placeholder="Select a category"
-          style={styles.dropdownStyle}
-          containerStyle={styles.dropdownContainer}
-          dropDownContainerStyle={styles.dropdownListStyle}
-          textStyle={styles.dropdownText}
-          // Optional theme setting for DropDownPicker
-          // theme="DARK" 
+      <ThemedView style={styles.searchContainer}>
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search recipes..."
+          placeholderTextColor="#777"
+          value={searchQuery}
+          onChangeText={setSearchQuery}
         />
+      </ThemedView>
 
-        {/* Display filtered recipes */}
-        {finalRecipes.map((recipe) => (
-          <ThemedView key={recipe.id} style={styles.recipeItem}>
-            {/* Change color of the text here */}
-            <ThemedText style={styles.recipeName}>{recipe.name}</ThemedText>
-            <ThemedText style={styles.recipeCategory}>{recipe.category}</ThemedText>
+      <DropDownPicker
+        open={open}
+        value={value}
+        items={items}
+        setOpen={setOpen}
+        setValue={setValue}
+        setItems={setItems}
+        placeholder="Select a category"
+        style={styles.dropdownStyle}
+        containerStyle={styles.dropdownContainer}
+        dropDownContainerStyle={styles.dropdownListStyle}
+        textStyle={styles.dropdownText}
+        // Optional theme setting for DropDownPicker
+        // theme="DARK" 
+      />
+
+      <FlatList
+        data={finalRecipes}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => (
+          <ThemedView style={styles.recipeItem}>
+            <ThemedText style={styles.recipeName}>{item.name}</ThemedText>
+            <ThemedText style={styles.recipeCategory}>{item.category}</ThemedText>
           </ThemedView>
-        ))}
-      </ScrollView>
+        )}
+      />
     </SafeAreaView>
   );
 }
