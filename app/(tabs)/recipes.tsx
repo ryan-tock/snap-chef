@@ -17,16 +17,27 @@ import { ThemedView } from '@/components/ThemedView';
 
 interface Recipe {
   id: string;
-  title: string;
+  name: string;
+  category: string;
   description: string;
+  ingredients: {
+    name: string;
+    amount: string;
+    unit: string;
+  }[];
+  instructions: string[];
   prepTime: number;
   cookTime: number;
-  servings: number;
-  ingredients: string[];
-  instructions: string[];
-  dietary?: string[];
-  requiredItems?: string[];
-  expiringSoon?: boolean;
+  nutritionalValues: string;
+  usesExpiringIngredients?: boolean;
+}
+
+interface Ingredient {
+  id: string;
+  name: string;
+  amount: number;
+  unit?: string;
+  isExpiring?: boolean;
 }
 
 function RecipesScreen(): React.JSX.Element {
@@ -34,11 +45,42 @@ function RecipesScreen(): React.JSX.Element {
 
   // Load recipes from route parameters if provided; otherwise, use sample recipes.
   const [recipes, setRecipes] = useState<Recipe[]>([]);
+  const [currentIngredients, setCurrentIngredients] = useState<Ingredient[]>([]);
+
   useEffect(() => {
     if (params.recipes) {
-      setRecipes(JSON.parse(params.recipes as string));
+      try {
+        // The recipes are double-stringified, so we need to parse twice
+        const outerParsed = JSON.parse(params.recipes as string);
+        const recipes = JSON.parse(outerParsed.recipes);
+        
+        // Transform the recipes to ensure all required fields exist
+        const processedRecipes = recipes.map((recipe: any) => ({
+          id: `recipe-${Date.now()}-${Math.random()}`,
+          name: recipe.name || 'Untitled Recipe',
+          category: recipe.category || 'Other',
+          description: recipe.description || 'No description available',
+          ingredients: Array.isArray(recipe.ingredients) ? recipe.ingredients : [],
+          instructions: Array.isArray(recipe.instructions) ? recipe.instructions : [],
+          prepTime: recipe.prepTime || 0,
+          cookTime: recipe.cookTime || 0,
+          nutritionalValues: recipe.nutritionalValues || 'Not available',
+          usesExpiringIngredients: false // We'll calculate this separately
+        }));
+
+        setRecipes(processedRecipes);
+      } catch (e) {
+        console.error('Failed to parse recipes:', e);
+      }
     }
-  }, [params.recipes]);
+    if (params.ingredients) {
+      try {
+        setCurrentIngredients(JSON.parse(params.ingredients as string));
+      } catch (e) {
+        console.error('Failed to parse ingredients:', e);
+      }
+    }
+  }, [params.recipes, params.ingredients]);
 
   // --- Search State ---
   const [searchQuery, setSearchQuery] = useState('');
@@ -126,54 +168,51 @@ function RecipesScreen(): React.JSX.Element {
   const sampleRecipes: Recipe[] = [
     {
       id: 'r1',
-      title: 'Pasta Primavera',
+      name: 'Pasta Primavera',
+      category: 'Dinner',
       description: 'A vibrant pasta dish with fresh veggies.',
-      prepTime: 15,
-      cookTime: 20,
-      servings: 4,
-      ingredients: ['Pasta', 'Tomatoes', 'Bell Peppers', 'Zucchini'],
+      ingredients: [{ name: 'Pasta', amount: '200g', unit: 'g' }, { name: 'Tomatoes', amount: '200g', unit: 'g' }, { name: 'Bell Peppers', amount: '100g', unit: 'g' }, { name: 'Zucchini', amount: '100g', unit: 'g' }],
       instructions: [
         'Boil pasta until al dente.',
         'Sauté vegetables with garlic and olive oil.',
         'Mix pasta with veggies, season with salt and pepper.'
       ],
-      dietary: ['Vegetarian'],
-      requiredItems: ['Pasta', 'Tomatoes'],
-      expiringSoon: false,
+      nutritionalValues: 'Calories: 300, Protein: 10g, Carbs: 50g, Fat: 5g',
+      usesExpiringIngredients: false,
+      prepTime: 15,
+      cookTime: 20,
     },
     {
       id: 'r2',
-      title: 'Hearty Pancakes',
+      name: 'Hearty Pancakes',
+      category: 'Breakfast',
       description: 'Fluffy pancakes perfect for breakfast.',
-      prepTime: 10,
-      cookTime: 5,
-      servings: 2,
-      ingredients: ['Flour', 'Eggs', 'Milk', 'Maple Syrup'],
+      ingredients: [{ name: 'Flour', amount: '200g', unit: 'g' }, { name: 'Eggs', amount: '4', unit: '' }, { name: 'Milk', amount: '200ml', unit: 'ml' }, { name: 'Maple Syrup', amount: '50ml', unit: 'ml' }],
       instructions: [
         'Mix flour, eggs, and milk until smooth.',
         'Cook on a griddle until bubbles form, flip and cook the other side.',
         'Serve with maple syrup.'
       ],
-      dietary: [],
-      requiredItems: ['Eggs', 'Milk'],
-      expiringSoon: true,
+      nutritionalValues: 'Calories: 200, Protein: 10g, Carbs: 30g, Fat: 5g',
+      usesExpiringIngredients: true,
+      prepTime: 10,
+      cookTime: 5,
     },
     {
       id: 'r3',
-      title: 'Fresh Garden Salad',
+      name: 'Fresh Garden Salad',
+      category: 'Lunch',
       description: 'A crisp and refreshing salad.',
-      prepTime: 8,
-      cookTime: 0,
-      servings: 3,
-      ingredients: ['Lettuce', 'Tomatoes', 'Cucumber', 'Olive Oil', 'Lemon Juice'],
+      ingredients: [{ name: 'Lettuce', amount: '200g', unit: 'g' }, { name: 'Tomatoes', amount: '100g', unit: 'g' }, { name: 'Cucumber', amount: '100g', unit: 'g' }, { name: 'Olive Oil', amount: '20ml', unit: 'ml' }, { name: 'Lemon Juice', amount: '10ml', unit: 'ml' }],
       instructions: [
         'Chop all vegetables.',
         'Toss with olive oil and lemon juice.',
         'Season with salt and pepper.'
       ],
-      dietary: ['Vegan', 'Gluten-Free'],
-      requiredItems: ['Lettuce', 'Tomatoes'],
-      expiringSoon: false,
+      nutritionalValues: 'Calories: 100, Protein: 2g, Carbs: 10g, Fat: 5g',
+      usesExpiringIngredients: false,
+      prepTime: 8,
+      cookTime: 0,
     },
   ];
 
@@ -182,45 +221,53 @@ function RecipesScreen(): React.JSX.Element {
   // --- Apply Filter (by title) ---
   const filteredByFilter = filterBy === 'All' 
     ? allRecipes 
-    : allRecipes.filter(recipe => recipe.title.toLowerCase().includes(filterBy.toLowerCase()));
+    : allRecipes.filter(recipe => recipe.name.toLowerCase().includes(filterBy.toLowerCase()));
 
   // --- Apply Extra Filter Panel Options ---
   let filteredByFilters = filteredByFilter;
   if (dietaryFilter !== 'All') {
     filteredByFilters = filteredByFilters.filter(recipe =>
-      recipe.dietary?.includes(dietaryFilter)
+      recipe.ingredients.some(ing => ing.name.toLowerCase().includes(dietaryFilter.toLowerCase()))
     );
   }
   if (servingsFilter !== 'All') {
     filteredByFilters = filteredByFilters.filter(recipe =>
-      recipe.servings === parseInt(servingsFilter)
+      recipe.ingredients.some(ing => ing.amount.includes(servingsFilter))
     );
   }
   if (requiredFilter !== 'All') {
     filteredByFilters = filteredByFilters.filter(recipe =>
-      recipe.requiredItems?.includes(requiredFilter)
+      recipe.ingredients.some(ing => ing.name.toLowerCase().includes(requiredFilter.toLowerCase()))
     );
   }
 
   // --- Apply Multi-select Filter Options ---
   if (selectedFilters.length > 0) {
     if (selectedFilters.includes('Vegan')) {
-      filteredByFilters = filteredByFilters.filter(recipe => recipe.dietary?.includes('Vegan'));
+      filteredByFilters = filteredByFilters.filter(recipe =>
+        recipe.ingredients.some(ing => ing.name.toLowerCase().includes('vegan'))
+      );
     }
     if (selectedFilters.includes('Vegetarian')) {
-      filteredByFilters = filteredByFilters.filter(recipe => recipe.dietary?.includes('Vegetarian'));
+      filteredByFilters = filteredByFilters.filter(recipe =>
+        recipe.ingredients.some(ing => ing.name.toLowerCase().includes('vegetarian'))
+      );
     }
     if (selectedFilters.includes('Gluten-Free')) {
-      filteredByFilters = filteredByFilters.filter(recipe => recipe.dietary?.includes('Gluten-Free'));
+      filteredByFilters = filteredByFilters.filter(recipe =>
+        recipe.ingredients.some(ing => ing.name.toLowerCase().includes('gluten-free'))
+      );
     }
     if (selectedFilters.includes('ExpiringSoon')) {
-      filteredByFilters = filteredByFilters.filter(recipe => recipe.expiringSoon);
+      filteredByFilters = filteredByFilters.filter(recipe =>
+        recipe.usesExpiringIngredients
+      );
     }
   }
 
   // --- Apply Search ---
   const filteredRecipes = filteredByFilters.filter(recipe => 
-    recipe.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    recipe.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     recipe.description.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -241,35 +288,54 @@ function RecipesScreen(): React.JSX.Element {
   } else if (sortBy === 'servings') {
     sortedRecipes.sort((a, b) =>
       sortDirection === 'asc'
-        ? a.servings - b.servings
-        : b.servings - a.servings
+        ? a.ingredients.length - b.ingredients.length
+        : b.ingredients.length - a.ingredients.length
     );
   }
 
   // Recipe Card without image at the top.
   const RecipeCard = ({ recipe }: { recipe: Recipe }) => {
     const [expanded, setExpanded] = useState(false);
+    
     return (
       <TouchableOpacity onPress={() => setExpanded(!expanded)}>
         <ThemedView style={styles.recipeCard}>
-          <ThemedText style={styles.recipeTitle}>{recipe.title}</ThemedText>
+          <View style={styles.recipeHeader}>
+            <ThemedText style={styles.recipeTitle}>{recipe.name}</ThemedText>
+            <ThemedText style={styles.recipeCategory}>{recipe.category}</ThemedText>
+          </View>
+          
+          {recipe.usesExpiringIngredients && (
+            <View style={styles.expiringBadge}>
+              <MaterialIcons name="warning" size={16} color="#FF5722" />
+              <ThemedText style={styles.expiringText}>Uses Expiring Ingredients</ThemedText>
+            </View>
+          )}
+
           <ThemedText style={styles.recipeDescription}>{recipe.description}</ThemedText>
           <ThemedText style={styles.prepTime}>
-            Prep Time: {recipe.prepTime}m | Total Time: {recipe.prepTime + recipe.cookTime}m | Servings: {recipe.servings}
+            Prep: {recipe.prepTime}m | Cook: {recipe.cookTime}m | Total: {recipe.prepTime + recipe.cookTime}m
           </ThemedText>
+
           {expanded && (
-            <ThemedView style={styles.subtab}>
+            <View style={styles.subtab}>
               <ThemedText style={styles.sectionTitle}>Ingredients:</ThemedText>
               {recipe.ingredients.map((ing, i) => (
-                <ThemedText key={i} style={styles.listItem}>• {ing}</ThemedText>
+                <ThemedText key={i} style={styles.listItem}>
+                  • {ing.amount} {ing.unit} {ing.name}
+                </ThemedText>
               ))}
+
               <ThemedText style={styles.sectionTitle}>Instructions:</ThemedText>
               {recipe.instructions.map((step, i) => (
                 <ThemedText key={i} style={styles.listItem}>
                   {i + 1}. {step}
                 </ThemedText>
               ))}
-            </ThemedView>
+
+              <ThemedText style={styles.sectionTitle}>Nutrition:</ThemedText>
+              <ThemedText style={styles.nutritionText}>{recipe.nutritionalValues}</ThemedText>
+            </View>
           )}
         </ThemedView>
       </TouchableOpacity>
@@ -437,11 +503,25 @@ const styles = StyleSheet.create({
     padding: 12,
     marginBottom: 12,
   },
+  recipeHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
   recipeTitle: {
     fontSize: 18,
     fontWeight: 'bold',
     color: '#1B5E20',
     marginBottom: 4,
+  },
+  recipeCategory: {
+    fontSize: 14,
+    color: '#666',
+    backgroundColor: '#E8F5E9',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
   },
   recipeDescription: { 
     fontSize: 16,
@@ -473,5 +553,25 @@ const styles = StyleSheet.create({
     color: '#333',
     marginBottom: 4,
     paddingLeft: 8,
+  },
+  expiringBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FBE9E7',
+    padding: 8,
+    borderRadius: 4,
+    marginBottom: 8,
+    gap: 4,
+  },
+  expiringText: {
+    color: '#FF5722',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  nutritionText: {
+    fontSize: 14,
+    color: '#666',
+    fontStyle: 'italic',
+    marginTop: 4,
   },
 });

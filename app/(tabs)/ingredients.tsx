@@ -10,12 +10,14 @@ import {
   Modal 
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useState, useEffect } from 'react';
 import DropDownPicker from 'react-native-dropdown-picker';
 
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
+
+const API_URL = 'http://10.37.163.63:5000';  // Your actual IP address
 
 interface Ingredient {
   id: string;
@@ -27,6 +29,7 @@ interface Ingredient {
 
 export default function IngredientsScreen() {
   const params = useLocalSearchParams();
+  const router = useRouter();
 
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
 
@@ -54,6 +57,8 @@ export default function IngredientsScreen() {
   // Add new state for amount editing
   const [amountModalVisible, setAmountModalVisible] = useState(false);
   const [editedAmount, setEditedAmount] = useState('');
+
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     if (params.ingredients) {
@@ -168,6 +173,53 @@ export default function IngredientsScreen() {
     setEditedAmount('');
   };
 
+  const generateRecipes = async () => {
+    try {
+      setIsLoading(true);
+      const simplifiedIngredients = ingredients.map(ing => ({
+        name: ing.name,
+        amount: ing.amount,
+        isExpiring: ing.isExpiring || false
+      }));
+
+      console.log('Sending ingredients:', JSON.stringify(simplifiedIngredients)); // Debug log
+
+      const response = await fetch(`${API_URL}/generate_recipes`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ ingredients: simplifiedIngredients })
+      });
+
+      const text = await response.text(); // Get raw response first
+      console.log('Raw response:', text); // Debug log
+
+      try {
+        const data = JSON.parse(text);
+        if (data.success) {
+          router.push({
+            pathname: '/recipes',
+            params: { 
+              recipes: data.recipes,
+              ingredients: JSON.stringify(ingredients)
+            }
+          });
+        } else {
+          Alert.alert('Error', data.error || 'Failed to generate recipes');
+        }
+      } catch (parseError) {
+        console.error('Parse error:', parseError);
+        Alert.alert('Error', 'Invalid response from server');
+      }
+    } catch (error) {
+      console.error('Connection error:', error);
+      Alert.alert('Error', 'Failed to connect to server');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
@@ -203,6 +255,17 @@ export default function IngredientsScreen() {
           zIndex={2000} 
           zIndexInverse={2000}
         />
+
+        {/* Generate Recipes Button */}
+        <View style={styles.headerButtons}>
+          <TouchableOpacity 
+            style={styles.generateButton}
+            onPress={generateRecipes}
+          >
+            <MaterialIcons name="restaurant" size={24} color="white" />
+            <ThemedText style={styles.generateButtonText}>Generate Recipes</ThemedText>
+          </TouchableOpacity>
+        </View>
 
         {/* Ingredients List */}
         <FlatList
@@ -615,6 +678,24 @@ const styles = StyleSheet.create({
   
   buttonText: {
     color: 'white',
+    fontWeight: '600',
+  },
+
+  headerButtons: {
+    marginBottom: 12,
+  },
+  generateButton: {
+    backgroundColor: '#FF5722',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 12,
+    borderRadius: 8,
+    gap: 8,
+  },
+  generateButtonText: {
+    color: 'white',
+    fontSize: 16,
     fontWeight: '600',
   },
 });

@@ -1,14 +1,65 @@
 from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
 import PIL.Image
-from gemini_api import (
-    client,
-    model,
-    parse_foods
-)
+import io
+import base64
+from google import genai
+from gemini_api import app as recipe_app
 
 app = Flask(__name__)
 CORS(app)
+
+model = "gemini-2.0-flash"
+client = genai.Client(api_key="AIzaSyC5Q2H6J1XhSKgvIDJa31H4vuAN9CE6HRo")
+
+def parse_foods(foods_txt):
+    return [item.strip().lower() for item in foods_txt.split(',')]
+
+@app.route('/analyze_image', methods=['POST'])
+def analyze_image():
+    try:
+        # Get base64 image from request
+        image_data = request.json.get('image')
+        if not image_data:
+            return jsonify({'error': 'No image data received'}), 400
+
+        # Convert base64 to PIL Image
+        image_bytes = base64.b64decode(image_data.split(',')[1])
+        image = PIL.Image.open(io.BytesIO(image_bytes))
+
+        # Send to Gemini for analysis
+        food_response = client.models.generate_content(
+            model=model,
+            contents=["Identify all the foods and the number of each food in the fridge.", image]
+        )
+
+        foods_txt = food_response.text
+        print("Fridge contents:", foods_txt)
+
+        # Parse the response into a structured format
+        ingredients = []
+        for food in parse_foods(foods_txt):
+            ingredients.append({
+                'id': f'ingredient-{len(ingredients)}',
+                'name': food,
+                'amount': 1,
+                'unit': 'piece'
+            })
+
+        return jsonify({
+            'success': True,
+            'ingredients': ingredients
+        })
+
+    except Exception as e:
+        print(f"Error analyzing image: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        })
+
+# Register the recipe generation blueprint
+app.register_blueprint(recipe_app)
 
 # Add a route for the home page
 @app.route('/')
