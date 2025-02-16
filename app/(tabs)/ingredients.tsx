@@ -59,12 +59,6 @@ export default function IngredientsScreen() {
     );
   };
 
-  // For the horizontal bar width
-  const getBarWidth = (amount: number) => {
-    const maxAmount = Math.max(...ingredients.map((i) => i.amount));
-    return maxAmount === 0 ? 0 : (amount / maxAmount) * 100;
-  };
-
   // 1) Filter by search query
   const filtered = ingredients.filter((ingredient) =>
     ingredient.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -118,38 +112,30 @@ export default function IngredientsScreen() {
         <FlatList
           data={finalIngredients}
           keyExtractor={item => item.id}
+          extraData={ingredients}
           renderItem={({ item }) => (
-            <View style={styles.ingredientContainer}>
+            <View style={styles.ingredientContainer} key={item.id}>
               <View style={styles.labelContainer}>
                 <ThemedText style={styles.ingredientName}>{item.name}</ThemedText>
-                <ThemedText style={styles.amount}>
-                  {item.amount} {item.unit}
-                </ThemedText>
-              </View>
+                <View style={styles.amountContainer}>
+                  <TouchableOpacity
+                    onPress={() => updateAmount(item.id, false)}
+                    style={styles.button}
+                  >
+                    <MaterialIcons name="remove" size={24} color="#2E7D32" />
+                  </TouchableOpacity>
 
-              <View style={styles.barContainer}>
-                <View
-                  style={[
-                    styles.bar,
-                    { width: `${getBarWidth(item.amount)}%` }
-                  ]}
-                />
-              </View>
+                  <ThemedText style={styles.amount}>
+                    {item.amount} {item.unit}
+                  </ThemedText>
 
-              <View style={styles.buttonsContainer}>
-                <TouchableOpacity
-                  onPress={() => updateAmount(item.id, false)}
-                  style={styles.button}
-                >
-                  <MaterialIcons name="remove" size={24} color="#2E7D32" />
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  onPress={() => updateAmount(item.id, true)}
-                  style={styles.button}
-                >
-                  <MaterialIcons name="add" size={24} color="#2E7D32" />
-                </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => updateAmount(item.id, true)}
+                    style={styles.button}
+                  >
+                    <MaterialIcons name="add" size={24} color="#2E7D32" />
+                  </TouchableOpacity>
+                </View>
               </View>
             </View>
           )}
@@ -219,37 +205,26 @@ const styles = StyleSheet.create({
   labelContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 8,
+    alignItems: 'center',
   },
   ingredientName: {
     fontSize: 16,
     fontWeight: '600',
-    flex: 1,  // Take up available space
+    flex: 1,
+  },
+  amountContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   amount: {
     fontSize: 16,
     color: '#666',
-    marginLeft: 8,
-  },
-  barContainer: {
-    height: 20,
-    backgroundColor: '#E8F5E9',
-    borderRadius: 10,
-    overflow: 'hidden',
-    marginBottom: 12,
-  },
-  bar: {
-    height: '100%',
-    backgroundColor: '#4CAF50',
-    borderRadius: 10,
-  },
-  buttonsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
+    minWidth: 60,
+    textAlign: 'center',
   },
   button: {
     padding: 8,
-    marginLeft: 8,
     backgroundColor: '#E8F5E9',
     borderRadius: 20,
   },
