@@ -1,206 +1,343 @@
-import React, { useState } from 'react';
-import {
-  SafeAreaView,
+import { 
   StyleSheet,
+  SafeAreaView,
+  View,
   TextInput,
   Platform,
   FlatList,
-  TouchableOpacity,
-  View,
+  TouchableOpacity
 } from 'react-native';
+import { MaterialIcons } from '@expo/vector-icons';
+import { useLocalSearchParams } from 'expo-router';
+import React, { useState, useEffect } from 'react';
 import DropDownPicker from 'react-native-dropdown-picker';
 
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 
-// Define your interfaces
-interface Ingredient {
-  name: string;
-  have: boolean;
-}
-
 interface Recipe {
   id: string;
-  name: string;
-  category: string;
-  description: string; // One-line description from Gemini
-  ingredients: Ingredient[];
-  prepTime: number; // in minutes
-  cookTime: number; // in minutes
-  nutritionalValues: string; // e.g., "500 kcal, 20g protein, etc."
+  title: string;
+  description: string;
+  prepTime: number;
+  cookTime: number;
+  servings: number;
+  ingredients: string[];
+  instructions: string[];
+  dietary?: string[];
+  requiredItems?: string[];
+  expiringSoon?: boolean;
 }
 
-// Custom component for the sort icon (three lines aligned to the left)
-const SortIcon = () => (
-  <View style={styles.sortIconContainer}>
-    <View style={styles.sortLineTop} />
-    <View style={styles.sortLineMiddle} />
-    <View style={styles.sortLineMid} />
-    <View style={styles.sortLineBottom} />
-  </View>
-);
+function RecipesScreen(): React.JSX.Element {
+  const params = useLocalSearchParams();
 
-export default function HomeScreen() {
+  // Load recipes from route parameters if provided; otherwise, use sample recipes.
+  const [recipes, setRecipes] = useState<Recipe[]>([]);
+  useEffect(() => {
+    if (params.recipes) {
+      setRecipes(JSON.parse(params.recipes as string));
+    }
+  }, [params.recipes]);
+
+  // --- Search State ---
   const [searchQuery, setSearchQuery] = useState('');
 
-  // DropDownPicker states for filtering categories
-  const [open, setOpen] = useState(false);
-  const [value, setValue] = useState('all'); // Current filter value
-  const [items, setItems] = useState([
-    { label: 'All', value: 'all' },
-    { label: 'Breakfast', value: 'Breakfast' },
-    { label: 'Lunch', value: 'Lunch' },
-    { label: 'Dinner', value: 'Dinner' },
+  // --- Sort State ---
+  const baseSortOptions = [
+    { label: 'No Sort', value: 'none' },
+    { label: '# of Ingredients', value: 'matching' },
+    { label: 'Time', value: 'time' },
+    { label: 'Servings', value: 'servings' },
+  ];
+  const [sortBy, setSortBy] = useState<'none' | 'matching' | 'time' | 'servings'>('none');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [sortItems, setSortItems] = useState<{ label: string; value: string }[]>(baseSortOptions);
+  const [openSort, setOpenSort] = useState(false);
+
+  const toggleSortDirection = () => {
+    if (sortBy !== 'none') {
+      setSortDirection(prev => (prev === 'asc' ? 'desc' : 'asc'));
+    }
+  };
+
+  const handleSortChange = (value: "none" | "matching" | "time" | "servings" | null) => {
+    if (value === null) return;
+    if (value === sortBy) {
+      toggleSortDirection();
+    } else {
+      setSortBy(value);
+      setSortDirection('asc');
+    }
+  };
+
+  const onSortValueChange = (callback: string | ((prev: string) => string)) => {
+    const newValue = typeof callback === 'function' ? callback(sortBy) : callback;
+    handleSortChange(newValue as "none" | "matching" | "time" | "servings");
+  };
+
+  // --- Filtering Dropdown (for title) ---
+  const [openFilter, setOpenFilter] = useState(false);
+  const [filterBy, setFilterBy] = useState('All');
+  const [filterItems, setFilterItems] = useState([
+    { label: 'All', value: 'All' },
+    { label: 'Pasta', value: 'Pasta' },
+    { label: 'Pancakes', value: 'Pancakes' },
+    { label: 'Salad', value: 'Salad' },
   ]);
 
-  // Sort options using a custom dropdown
-  const [sortOpen, setSortOpen] = useState(false);
-  const [sortValue, setSortValue] = useState('match'); // 'match' or 'time'
-  const sortItems = [
-    { label: 'Matching Ingredients', value: 'match' },
-    { label: 'Total Time', value: 'time' },
-  ];
+  // --- Filter Panel for extra filters ---
+  const [filterPanelOpen, setFilterPanelOpen] = useState(false);
+  const [dietaryFilter, setDietaryFilter] = useState('All');
+  const [dietaryItems, setDietaryItems] = useState([
+    { label: 'All', value: 'All' },
+    { label: 'Vegetarian', value: 'Vegetarian' },
+    { label: 'Vegan', value: 'Vegan' },
+    { label: 'Gluten-Free', value: 'Gluten-Free' },
+  ]);
+  const [servingsFilter, setServingsFilter] = useState('All');
+  const [servingsItems, setServingsItems] = useState([
+    { label: 'All', value: 'All' },
+    { label: '1', value: '1' },
+    { label: '2', value: '2' },
+    { label: '3', value: '3' },
+    { label: '4', value: '4' },
+    { label: '5', value: '5' },
+  ]);
+  const [requiredFilter, setRequiredFilter] = useState('All');
+  const [requiredItems, setRequiredItems] = useState([
+    { label: 'All', value: 'All' },
+    { label: 'Cheese', value: 'Cheese' },
+    { label: 'Eggs', value: 'Eggs' },
+    { label: 'Milk', value: 'Milk' },
+    { label: 'Pasta', value: 'Pasta' },
+  ]);
 
-  // Example list of recipes with additional properties
-  const recipes: Recipe[] = [
+  // --- New Multi-select Filter Dropdown for dietary and expiring soon ---
+  const filterOptions = [
+    { label: 'Vegan', value: 'Vegan' },
+    { label: 'Vegetarian', value: 'Vegetarian' },
+    { label: 'Gluten-Free', value: 'Gluten-Free' },
+    { label: 'Including Expiring Soon', value: 'ExpiringSoon' },
+  ];
+  const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
+
+  // --- Sample Recipes ---
+  const sampleRecipes: Recipe[] = [
     {
-      id: '1',
-      name: 'Pasta',
-      category: 'Dinner',
-      description: 'A hearty pasta dish with a rich tomato sauce.',
-      ingredients: [
-        { name: 'Pasta', have: true },
-        { name: 'Tomato Sauce', have: false },
-        { name: 'Cheese', have: true },
-      ],
-      prepTime: 10,
+      id: 'r1',
+      title: 'Pasta Primavera',
+      description: 'A vibrant pasta dish with fresh veggies.',
+      prepTime: 15,
       cookTime: 20,
-      nutritionalValues: '500 kcal, 20g protein, 60g carbs',
+      servings: 4,
+      ingredients: ['Pasta', 'Tomatoes', 'Bell Peppers', 'Zucchini'],
+      instructions: [
+        'Boil pasta until al dente.',
+        'Sauté vegetables with garlic and olive oil.',
+        'Mix pasta with veggies, season with salt and pepper.'
+      ],
+      dietary: ['Vegetarian'],
+      requiredItems: ['Pasta', 'Tomatoes'],
+      expiringSoon: false,
     },
     {
-      id: '2',
-      name: 'Pancakes',
-      category: 'Breakfast',
-      description: 'Fluffy pancakes perfect for a sweet morning treat.',
-      ingredients: [
-        { name: 'Flour', have: true },
-        { name: 'Eggs', have: true },
-        { name: 'Milk', have: false },
+      id: 'r2',
+      title: 'Hearty Pancakes',
+      description: 'Fluffy pancakes perfect for breakfast.',
+      prepTime: 10,
+      cookTime: 5,
+      servings: 2,
+      ingredients: ['Flour', 'Eggs', 'Milk', 'Maple Syrup'],
+      instructions: [
+        'Mix flour, eggs, and milk until smooth.',
+        'Cook on a griddle until bubbles form, flip and cook the other side.',
+        'Serve with maple syrup.'
       ],
-      prepTime: 5,
-      cookTime: 10,
-      nutritionalValues: '350 kcal, 8g protein, 45g carbs',
+      dietary: [],
+      requiredItems: ['Eggs', 'Milk'],
+      expiringSoon: true,
     },
     {
-      id: '3',
-      name: 'Salad',
-      category: 'Lunch',
-      description: 'A fresh salad with crisp vegetables and a tangy dressing.',
-      ingredients: [
-        { name: 'Lettuce', have: true },
-        { name: 'Tomato', have: true },
-        { name: 'Cucumber', have: false },
-      ],
+      id: 'r3',
+      title: 'Fresh Garden Salad',
+      description: 'A crisp and refreshing salad.',
       prepTime: 8,
       cookTime: 0,
-      nutritionalValues: '200 kcal, 5g protein, 10g carbs',
+      servings: 3,
+      ingredients: ['Lettuce', 'Tomatoes', 'Cucumber', 'Olive Oil', 'Lemon Juice'],
+      instructions: [
+        'Chop all vegetables.',
+        'Toss with olive oil and lemon juice.',
+        'Season with salt and pepper.'
+      ],
+      dietary: ['Vegan', 'Gluten-Free'],
+      requiredItems: ['Lettuce', 'Tomatoes'],
+      expiringSoon: false,
     },
   ];
 
-  // 1) Filter by search text
-  const filteredBySearch = recipes.filter((recipe) =>
-    recipe.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const allRecipes: Recipe[] = recipes.length > 0 ? recipes : sampleRecipes;
 
-  // 2) Filter by category drop-down (unless "all" is selected)
-  let finalRecipes = filteredBySearch;
-  if (value !== 'all') {
-    finalRecipes = filteredBySearch.filter(
-      (recipe) => recipe.category.toLowerCase() === value.toLowerCase()
+  // --- Apply Filter (by title) ---
+  const filteredByFilter = filterBy === 'All' 
+    ? allRecipes 
+    : allRecipes.filter(recipe => recipe.title.toLowerCase().includes(filterBy.toLowerCase()));
+
+  // --- Apply Extra Filter Panel Options ---
+  let filteredByFilters = filteredByFilter;
+  if (dietaryFilter !== 'All') {
+    filteredByFilters = filteredByFilters.filter(recipe =>
+      recipe.dietary?.includes(dietaryFilter)
+    );
+  }
+  if (servingsFilter !== 'All') {
+    filteredByFilters = filteredByFilters.filter(recipe =>
+      recipe.servings === parseInt(servingsFilter)
+    );
+  }
+  if (requiredFilter !== 'All') {
+    filteredByFilters = filteredByFilters.filter(recipe =>
+      recipe.requiredItems?.includes(requiredFilter)
     );
   }
 
-  // 3) Sorting
-  finalRecipes = finalRecipes.slice().sort((a, b) => {
-    // Calculate percentages for matching ingredients
-    const aAvailable = a.ingredients.filter((ing) => ing.have).length;
-    const bAvailable = b.ingredients.filter((ing) => ing.have).length;
-    const aPercent = aAvailable / a.ingredients.length;
-    const bPercent = bAvailable / b.ingredients.length;
-    // Total time (prep + cook)
-    const aTotalTime = a.prepTime + a.cookTime;
-    const bTotalTime = b.prepTime + b.cookTime;
-
-    if (sortValue === 'match') {
-      // Descending order: higher matching percentage first
-      return bPercent - aPercent;
-    } else if (sortValue === 'time') {
-      // Ascending order: lower total time first
-      return aTotalTime - bTotalTime;
+  // --- Apply Multi-select Filter Options ---
+  if (selectedFilters.length > 0) {
+    if (selectedFilters.includes('Vegan')) {
+      filteredByFilters = filteredByFilters.filter(recipe => recipe.dietary?.includes('Vegan'));
     }
-    return 0;
-  });
+    if (selectedFilters.includes('Vegetarian')) {
+      filteredByFilters = filteredByFilters.filter(recipe => recipe.dietary?.includes('Vegetarian'));
+    }
+    if (selectedFilters.includes('Gluten-Free')) {
+      filteredByFilters = filteredByFilters.filter(recipe => recipe.dietary?.includes('Gluten-Free'));
+    }
+    if (selectedFilters.includes('ExpiringSoon')) {
+      filteredByFilters = filteredByFilters.filter(recipe => recipe.expiringSoon);
+    }
+  }
 
-  // Component to display each recipe as an attached drop-down tab
-  const RecipeTab = ({ recipe }: { recipe: Recipe }) => {
-    const [isExpanded, setIsExpanded] = useState(false);
-    // Calculate the percentage of available ingredients
-    const availableCount = recipe.ingredients.filter((ing) => ing.have).length;
-    const totalCount = recipe.ingredients.length;
-    const percentage = Math.round((availableCount / totalCount) * 100);
+  // --- Apply Search ---
+  const filteredRecipes = filteredByFilters.filter(recipe => 
+    recipe.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    recipe.description.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
-    // Set a mild background tint based on percentage match
-    const bgColor =
-      percentage > 75
-        ? '#d4efdf' // light green
-        : percentage > 50
-        ? '#fcf3cf' // light yellow
-        : '#f5b7b1'; // light red
+  // --- Apply Sorting based on sortBy and sortDirection ---
+  let sortedRecipes = [...filteredRecipes];
+  if (sortBy === 'matching') {
+    sortedRecipes.sort((a, b) =>
+      sortDirection === 'asc'
+        ? a.ingredients.length - b.ingredients.length
+        : b.ingredients.length - a.ingredients.length
+    );
+  } else if (sortBy === 'time') {
+    sortedRecipes.sort((a, b) =>
+      sortDirection === 'asc'
+        ? (a.prepTime + a.cookTime) - (b.prepTime + b.cookTime)
+        : (b.prepTime + b.cookTime) - (a.prepTime + a.cookTime)
+    );
+  } else if (sortBy === 'servings') {
+    sortedRecipes.sort((a, b) =>
+      sortDirection === 'asc'
+        ? a.servings - b.servings
+        : b.servings - a.servings
+    );
+  }
 
+  // Recipe Card without image at the top.
+  const RecipeCard = ({ recipe }: { recipe: Recipe }) => {
+    const [expanded, setExpanded] = useState(false);
     return (
-      <View style={styles.recipeContainer}>
-        <TouchableOpacity onPress={() => setIsExpanded(!isExpanded)}>
-          <ThemedView style={[styles.recipeTab, { backgroundColor: bgColor }]}>
-            <ThemedText style={styles.recipeName}>{recipe.name}</ThemedText>
-            <ThemedText style={styles.recipeDescription}>
-              {recipe.description}
-            </ThemedText>
-            <ThemedText style={styles.recipePercentage}>
-              {percentage}% matching ingredients
-            </ThemedText>
-            <ThemedText style={styles.recipeTime}>
-              Prep: {recipe.prepTime}m, Cook: {recipe.cookTime}m
-            </ThemedText>
-          </ThemedView>
-        </TouchableOpacity>
-        {isExpanded && (
-          <ThemedView style={styles.recipeDetails}>
-            <ThemedText style={styles.detailTitle}>Ingredients:</ThemedText>
-            {recipe.ingredients.map((ing, index: number) => (
-              <ThemedText key={index.toString()} style={styles.ingredientText}>
-                {ing.name}: {ing.have ? 'Available' : 'Missing'}
-              </ThemedText>
-            ))}
-            <ThemedText style={styles.detailTitle}>Instructions:</ThemedText>
-            <ThemedText style={styles.instructionText}>
-              [Insert step-by-step cooking instructions here...]
-            </ThemedText>
-            <ThemedText style={styles.detailTitle}>
-              Nutritional Values:
-            </ThemedText>
-            <ThemedText style={styles.nutritionText}>
-              {recipe.nutritionalValues}
-            </ThemedText>
-          </ThemedView>
-        )}
-      </View>
+      <TouchableOpacity onPress={() => setExpanded(!expanded)}>
+        <ThemedView style={styles.recipeCard}>
+          <ThemedText style={styles.recipeTitle}>{recipe.title}</ThemedText>
+          <ThemedText style={styles.recipeDescription}>{recipe.description}</ThemedText>
+          <ThemedText style={styles.prepTime}>
+            Prep Time: {recipe.prepTime}m | Total Time: {recipe.prepTime + recipe.cookTime}m | Servings: {recipe.servings}
+          </ThemedText>
+          {expanded && (
+            <ThemedView style={styles.subtab}>
+              <ThemedText style={styles.sectionTitle}>Ingredients:</ThemedText>
+              {recipe.ingredients.map((ing, i) => (
+                <ThemedText key={i} style={styles.listItem}>• {ing}</ThemedText>
+              ))}
+              <ThemedText style={styles.sectionTitle}>Instructions:</ThemedText>
+              {recipe.instructions.map((step, i) => (
+                <ThemedText key={i} style={styles.listItem}>
+                  {i + 1}. {step}
+                </ThemedText>
+              ))}
+            </ThemedView>
+          )}
+        </ThemedView>
+      </TouchableOpacity>
     );
   };
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header: Search and Sort */}
-      <View style={styles.headerContainer}>
+      <View style={styles.content}>
+        {/* Header with Filter and Sort Section */}
+        <View style={styles.headerContainer}>
+          <TouchableOpacity 
+            style={styles.filterButton}
+            onPress={() => setOpenFilter(!openFilter)}
+          >
+            <MaterialIcons name="filter-list" size={24} color="#1B5E20" />
+            <ThemedText style={styles.sortByText}>Filter</ThemedText>
+            <MaterialIcons name="arrow-drop-down" size={24} color="#1B5E20" />
+          </TouchableOpacity>
+          <View style={styles.sortHeader}>
+            {/* Tappable arrow icon on the left toggles sort direction */}
+            <TouchableOpacity onPress={toggleSortDirection} style={styles.sortIconButton}>
+              <MaterialIcons 
+                name={sortDirection === 'asc' ? 'arrow-upward' : 'arrow-downward'} 
+                size={20} 
+                color="#1B5E20" 
+              />
+            </TouchableOpacity>
+            <ThemedText style={styles.sortByStatic}>Sort By: </ThemedText>
+            <TouchableOpacity 
+              style={styles.sortByButton}
+              onPress={() => setOpenSort(!openSort)}
+            >
+              <ThemedText style={styles.sortByText}>
+                {sortBy !== 'none'
+                  ? sortBy === 'matching'
+                    ? '# of Ingredients'
+                    : sortBy === 'time'
+                    ? 'Time'
+                    : sortBy === 'servings'
+                    ? 'Servings'
+                    : ''
+                  : 'Select'}
+              </ThemedText>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Filter Dropdown */}
+        {openFilter && (
+          <DropDownPicker<string>
+            open={openFilter}
+            value={selectedFilters}
+            items={filterOptions}
+            setOpen={setOpenFilter}
+            setValue={setSelectedFilters}
+            placeholder="Select filter options"
+            multiple={true}
+            style={styles.dropdownStyle}
+            containerStyle={styles.dropdownContainer}
+            dropDownContainerStyle={styles.dropdownListStyle}
+            textStyle={styles.dropdownText}
+            zIndex={2200}
+            zIndexInverse={2200}
+          />
+        )}
+
+        {/* Search Bar */}
         <View style={styles.searchContainer}>
           <TextInput
             style={styles.searchInput}
@@ -210,198 +347,131 @@ export default function HomeScreen() {
             onChangeText={setSearchQuery}
           />
         </View>
-        <TouchableOpacity
-          style={styles.sortButton}
-          onPress={() => setSortOpen(!sortOpen)}
-        >
-          <ThemedText style={styles.sortButtonLabel}>Sort</ThemedText>
-          <SortIcon />
-        </TouchableOpacity>
+
+        {/* Sort Dropdown */}
+        {openSort && (
+          <DropDownPicker<string>
+            open={openSort}
+            value={sortBy}
+            items={sortItems}
+            setOpen={setOpenSort}
+            setValue={(callback) => {
+              const newValue = typeof callback === 'function' ? callback(sortBy) : callback;
+              handleSortChange(newValue);
+            }}
+            setItems={setSortItems}
+            placeholder="Sort by Option"
+            multiple={false}
+            style={styles.dropdownStyle}
+            containerStyle={styles.dropdownContainer}
+            dropDownContainerStyle={styles.dropdownListStyle}
+            textStyle={styles.dropdownText}
+            zIndex={2000}
+            zIndexInverse={2000}
+          />
+        )}
+
+        {/* Recipes List */}
+        <FlatList
+          data={sortedRecipes}
+          keyExtractor={item => item.id}
+          renderItem={({ item }) => <RecipeCard recipe={item} />}
+        />
       </View>
-
-      {/* Category Filter */}
-      <DropDownPicker
-        open={open}
-        value={value}
-        items={items}
-        setOpen={setOpen}
-        setValue={setValue}
-        setItems={setItems}
-        placeholder="Select a category"
-        style={styles.dropdownStyle}
-        containerStyle={styles.dropdownContainer}
-        dropDownContainerStyle={styles.dropdownListStyle}
-        textStyle={styles.dropdownText}
-      />
-
-      {/* Custom Sort Dropdown */}
-      {sortOpen && (
-        <View style={styles.sortDropdown}>
-          {sortItems.map((item) => (
-            <TouchableOpacity
-              key={item.value}
-              onPress={() => {
-                setSortValue(item.value);
-                setSortOpen(false);
-              }}
-              style={styles.sortDropdownItem}
-            >
-              <ThemedText>{item.label}</ThemedText>
-            </TouchableOpacity>
-          ))}
-        </View>
-      )}
-
-      <FlatList
-        data={finalRecipes}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => <RecipeTab recipe={item} />}
-      />
     </SafeAreaView>
   );
 }
 
+export default RecipesScreen;
+
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#000', // Dark background
-    padding: 12,
+  container: { flex: 1 },
+  content: { flex: 1, padding: 16 },
+  headerContainer: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    marginBottom: 12 
   },
-  headerContainer: {
+  filterButton: { 
+    flexDirection: 'row', 
+    alignItems: 'center' 
+  },
+  sortHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
   },
-  searchContainer: {
-    flex: 1,
+  sortByStatic: {
+    fontSize: 16,
+    color: '#1B5E20',
   },
+  sortByButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginLeft: 4,
+  },
+  sortByText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#1B5E20',
+  },
+  sortIconButton: {
+    marginRight: 4,
+  },
+  dropdownContainer: { marginBottom: 12 },
+  dropdownStyle: { backgroundColor: '#f5f5f5', borderColor: '#ccc' },
+  dropdownListStyle: { backgroundColor: '#e8e8e8', borderColor: '#ccc' },
+  dropdownText: { fontSize: 16, color: '#000' },
+  searchContainer: { marginBottom: 12 },
   searchInput: {
     borderWidth: 1,
-    borderColor: '#444',
+    borderColor: '#ccc',
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: Platform.OS === 'ios' ? 12 : 8,
-    color: '#fff',
-  },
-  sortButton: {
-    marginLeft: 8,
-    padding: 8,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  sortButtonLabel: {
-    fontSize: 14,
-    color: '#fff',
-    marginRight: 4, // Small space between label and icon
-  },
-  // Custom sort icon styles with adjusted dimensions and left alignment
-  sortIconContainer: {
-    alignItems: 'flex-start', // Align lines to the left
-  },
-  sortLineTop: {
-    width: 18,
-    height: 2,
-    backgroundColor: '#fff',
-    marginBottom: 2,
-  },
-  sortLineMiddle: {
-    width: 16,
-    height: 2,
-    backgroundColor: '#fff',
-    marginBottom: 2,
-  },  
-  sortLineMid: {
-    width: 14,
-    height: 2,
-    backgroundColor: '#fff',
-    marginBottom: 2,
-  },
-  sortLineBottom: {
-    width: 12,
-    height: 2,
-    backgroundColor: '#fff',
-  },
-  dropdownContainer: {
-    marginBottom: 12,
-    zIndex: 1000,
-  },
-  dropdownStyle: {
-    backgroundColor: '#111',
-    borderColor: '#444',
-  },
-  dropdownListStyle: {
-    backgroundColor: '#222',
-    borderColor: '#444',
-  },
-  dropdownText: {
-    color: '#fff',
-  },
-  sortDropdown: {
-    position: 'absolute',
-    top: 60, // Adjust based on your header height
-    right: 12,
-    backgroundColor: '#111',
-    borderRadius: 8,
-    padding: 8,
-    zIndex: 1100,
-  },
-  sortDropdownItem: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-  },
-  recipeContainer: {
-    marginBottom: 12,
-    borderRadius: 8,
-    overflow: 'hidden',
-  },
-  recipeTab: {
-    padding: 12,
-  },
-  recipeName: {
-    color: '#000',
-    fontSize: 18,
-    fontWeight: '600',
-  },
-  recipeDescription: {
-    color: '#333',
-    fontSize: 14,
-    marginVertical: 4,
-  },
-  recipePercentage: {
-    color: '#555',
-    fontSize: 14,
-  },
-  recipeTime: {
-    color: '#555',
-    fontSize: 14,
-    marginTop: 4,
-  },
-  recipeDetails: {
-    backgroundColor: '#444',
-    padding: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#555',
-  },
-  detailTitle: {
-    color: '#fff',
     fontSize: 16,
+    color: '#000',
+  },
+  recipeCard: {
+    backgroundColor: '#f8f8f8',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 12,
+  },
+  recipeTitle: {
+    fontSize: 18,
     fontWeight: 'bold',
+    color: '#1B5E20',
     marginBottom: 4,
   },
-  ingredientText: {
-    color: '#ddd',
-    fontSize: 14,
-    marginLeft: 8,
-    marginBottom: 2,
+  recipeDescription: { 
+    fontSize: 16,
+    color: '#333',
+    marginBottom: 4,
   },
-  instructionText: {
-    color: '#ddd',
+  prepTime: {
     fontSize: 14,
+    color: '#555',
+  },
+  subtab: {
     marginTop: 8,
+    backgroundColor: '#f0f0f0', // Grey white background for subtabs
+    borderTopWidth: 1,
+    borderTopColor: '#ccc',
+    paddingTop: 8,
+    padding: 8,
+    borderRadius: 4,
   },
-  nutritionText: {
-    color: '#ddd',
-    fontSize: 14,
-    marginTop: 4,
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#2E7D32',
+    marginTop: 8,
+    marginBottom: 4,
+  },
+  listItem: {
+    fontSize: 15,
+    color: '#333',
+    marginBottom: 4,
+    paddingLeft: 8,
   },
 });
