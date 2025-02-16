@@ -12,7 +12,7 @@ CORS(app)
 
 model = "gemini-pro"  # For text generation
 vision_model = "gemini-2.0-flash"  # For image analysis
-client = genai.Client(api_key="AIzaSyCyVeSxYdPBcrKF0bgHqDXAbAhzGnZBnVQ")
+client = genai.Client(api_key="AIzaSyBG764Zn4BcmFCw2ZqkF8VEUwLYmUEZYvE")
 
 def parse_foods(foods_txt):
     return [item.strip().lower() for item in foods_txt.split(',')]
