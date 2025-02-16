@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { 
   View, 
   Text, 
@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { MaterialIcons } from '@expo/vector-icons';
+import { CameraView, CameraType, useCameraPermissions, Camera } from 'expo-camera';
 
 interface Recipe {
   title: string;
@@ -28,6 +29,32 @@ const ApiTest = () => {
   const [matchedRecipes, setMatchedRecipes] = useState<Recipe[]>([]);
   const [aiSuggestions, setAiSuggestions] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+
+  const [facing, setFacing] = useState<CameraType>('back');
+  const cameraRef = useRef<CameraView>(null);
+  const [cameraShown, setCameraShown] = useState(false);
+
+  useEffect(() => {
+    // Request permissions
+    (async () => {
+      const { status } = await Camera.requestCameraPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Sorry, we need camera permissions to make this work!');
+      }
+    })();
+  }, []);
+
+  const takePicture = async () => {
+    if (cameraRef.current) {
+      const photoData = await cameraRef.current.takePictureAsync(); // Capture the photo
+      if (photoData == undefined) {
+        return;
+      }
+      setImage(photoData.uri); // Save photo URI
+    } else {
+      console.log("no camera ref")
+    }
+  };
 
   const handleImageUpload = async () => {
     if (!image) return;
@@ -88,10 +115,6 @@ const ApiTest = () => {
     }
   };
 
-  const takePicture = () => {
-    // router.push('/camera');
-  };
-
   useEffect(() => {
     // Request permissions
     (async () => {
@@ -104,76 +127,111 @@ const ApiTest = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView style={styles.scrollView}>
-        <View style={styles.content}>
-          <Text style={styles.title}>Snap Chef</Text>
-          
-          <TouchableOpacity 
-            style={styles.uploadButton} 
-            onPress={pickImage}
-          >
-            <MaterialIcons name="photo-library" size={24} color="white" />
-            <Text style={styles.uploadButtonText}>Choose Photo</Text>
-          </TouchableOpacity>
+      <View style={styles.content}>
+        <Text style={styles.title}>Snap Chef</Text>
 
-          {image && (
-            <View style={styles.imageContainer}>
-              <Image 
-                source={{ uri: image }} 
-                style={styles.image} 
-              />
-              <TouchableOpacity 
-                style={styles.analyzeButton}
-                onPress={handleImageUpload}
-                disabled={isLoading}
-              >
-                <MaterialIcons name="search" size={24} color="white" />
-                <Text style={styles.buttonText}>Analyze Fridge</Text>
+        {!cameraShown ? (
+          <>
+            <TouchableOpacity style={styles.uploadButton} onPress={pickImage}>
+              <MaterialIcons name="photo-library" size={24} color="white" />
+              <Text style={styles.uploadButtonText}>Choose Photo</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.uploadButton}
+              onPress={function() {
+                setImage(null);
+                setCameraShown(true);
+              }}
+            >
+            <MaterialIcons name="photo-camera" size={24} color="white" />
+            <Text style={styles.uploadButtonText}>Take Photo</Text>
+            </TouchableOpacity>
+          </>
+        ) : (
+          <>
+            {image ? (
+              <Image source={{ uri : image }} style={styles.camera} />
+            ) : (
+              <CameraView ref={cameraRef} style={styles.camera} facing={facing} />
+            )}
+            {image ? (
+              <View style={styles.buttonRow}>
+                <TouchableOpacity style={styles.captureButton} onPress={function() {
+                  setImage(null);
+                }}>
+                  <Text>🗑 Clear Photo</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.captureButton} onPress={function(){
+                  setCameraShown(false);
+                }}>
+                  <Text>✅ Select Photo</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <TouchableOpacity style={styles.captureButton} onPress={takePicture}>
+                <Text>📸 Take Photo</Text>
               </TouchableOpacity>
-            </View>
-          )}
+            )}
+          </>
+        )}
 
-          {isLoading && (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color="#4CAF50" />
-              <Text style={styles.loadingText}>Analyzing your fridge...</Text>
-            </View>
-          )}
+        {image && !cameraShown && (
+          <View style={styles.imageContainer}>
+            <Image 
+              source={{ uri: image }} 
+              style={styles.image} 
+            />
+            <TouchableOpacity 
+              style={styles.analyzeButton}
+              onPress={handleImageUpload}
+              disabled={isLoading}
+            >
+              <MaterialIcons name="search" size={24} color="white" />
+              <Text style={styles.buttonText}>Analyze Fridge</Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
-          {fridgeContents && (
-            <View style={styles.card}>
-              <Text style={styles.cardTitle}>Fridge Contents</Text>
-              <Text style={styles.cardText}>{fridgeContents}</Text>
-            </View>
-          )}
+        {isLoading && (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#4CAF50" />
+            <Text style={styles.loadingText}>Analyzing your fridge...</Text>
+          </View>
+        )}
 
-          {matchedRecipes.length > 0 && (
-            <View style={styles.card}>
-              <Text style={styles.cardTitle}>Matched Recipes</Text>
-              {matchedRecipes.map((recipe, index) => (
-                <View key={index} style={styles.recipeCard}>
-                  <Text style={styles.recipeTitle}>{recipe.title}</Text>
-                  <Text style={styles.sectionTitle}>Ingredients</Text>
-                  {recipe.ingredients.map((ingredient, i) => (
-                    <Text key={i} style={styles.listItem}>• {ingredient}</Text>
-                  ))}
-                  <Text style={styles.sectionTitle}>Instructions</Text>
-                  {recipe.instructions.map((step, i) => (
-                    <Text key={i} style={styles.listItem}>{i + 1}. {step}</Text>
-                  ))}
-                </View>
-              ))}
-            </View>
-          )}
+        {fridgeContents && (
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Fridge Contents</Text>
+            <Text style={styles.cardText}>{fridgeContents}</Text>
+          </View>
+        )}
 
-          {aiSuggestions && (
-            <View style={styles.card}>
-              <Text style={styles.cardTitle}>AI Recipe Suggestions</Text>
-              <Text style={styles.cardText}>{aiSuggestions}</Text>
-            </View>
-          )}
-        </View>
-      </ScrollView>
+        {matchedRecipes.length > 0 && (
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Matched Recipes</Text>
+            {matchedRecipes.map((recipe, index) => (
+              <View key={index} style={styles.recipeCard}>
+                <Text style={styles.recipeTitle}>{recipe.title}</Text>
+                <Text style={styles.sectionTitle}>Ingredients</Text>
+                {recipe.ingredients.map((ingredient, i) => (
+                  <Text key={i} style={styles.listItem}>• {ingredient}</Text>
+                ))}
+                <Text style={styles.sectionTitle}>Instructions</Text>
+                {recipe.instructions.map((step, i) => (
+                  <Text key={i} style={styles.listItem}>{i + 1}. {step}</Text>
+                ))}
+              </View>
+            ))}
+          </View>
+        )}
+
+        {aiSuggestions && (
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>AI Recipe Suggestions</Text>
+            <Text style={styles.cardText}>{aiSuggestions}</Text>
+          </View>
+        )}
+      </View>
     </SafeAreaView>
   );
 };
@@ -187,6 +245,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
+    flex: 1,
     padding: 16,
   },
   title: {
@@ -293,6 +352,23 @@ const styles = StyleSheet.create({
     marginBottom: 4,
     paddingLeft: 8,
   },
+  camera: {
+    flex: 1,
+    width: '100%',
+  },
+  captureButton: {
+    backgroundColor: '#fff',
+    padding: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 50,
+    alignSelf: 'center',
+    borderRadius: 50,
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  }
 });
 
 export default ApiTest;
