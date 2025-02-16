@@ -1,6 +1,14 @@
-import { StyleSheet, SafeAreaView, View, TouchableOpacity, TextInput, Platform, FlatList } from 'react-native';
+import { 
+  StyleSheet,
+  SafeAreaView,
+  View,
+  TouchableOpacity,
+  TextInput,
+  Platform,
+  FlatList 
+} from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import React, { useState, useEffect } from 'react';
 import DropDownPicker from 'react-native-dropdown-picker';
 
@@ -14,29 +22,20 @@ interface Ingredient {
 }
 
 export default function IngredientsScreen() {
-  const router = useRouter();
   const params = useLocalSearchParams();
 
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
 
-  // For searching by ingredient name
+  // --- Search ---
   const [searchQuery, setSearchQuery] = useState('');
 
-  // --- First Drop-Down: Filter by unit type ---
-  const [openUnit, setOpenUnit] = useState(false);
-  const [filterUnit, setFilterUnit] = useState('all'); // Selected unit from drop-down
-  const [unitItems, setUnitItems] = useState([
-    { label: 'All', value: 'all' },
-    { label: 'Amount', value: 'amount' },
-  ]);
-
-  // --- Second Drop-Down: Sort by amount (ascending/descending) ---
+  // --- Single Drop-Down for Sorting (Least/Most) ---
   const [openSort, setOpenSort] = useState(false);
   const [sortBy, setSortBy] = useState('none');
   const [sortItems, setSortItems] = useState([
     { label: 'No Sort', value: 'none' },
-    { label: 'Amount Ascending', value: 'asc' },
-    { label: 'Amount Descending', value: 'desc' },
+    { label: 'Least Ingredients', value: 'asc' },   // ascending by amount
+    { label: 'Most Ingredients', value: 'desc' },  // descending by amount
   ]);
 
   useEffect(() => {
@@ -45,7 +44,7 @@ export default function IngredientsScreen() {
     }
   }, [params.ingredients]);
 
-  // Function to increment or decrement ingredient amount
+  // Increment / Decrement an ingredient's amount
   const updateAmount = (index: number, increment: boolean) => {
     setIngredients((current) =>
       current.map((item, idx) =>
@@ -65,35 +64,18 @@ export default function IngredientsScreen() {
     return maxAmount === 0 ? 0 : (amount / maxAmount) * 100;
   };
 
-  // --------------------------
   // 1) Filter by search query
-  // --------------------------
-  const filteredBySearch = ingredients.filter((ingredient) =>
+  const filtered = ingredients.filter((ingredient) =>
     ingredient.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // --------------------------------
-  // 2) Filter by unit drop-down
-  // --------------------------------
-  let filteredByUnit = filteredBySearch;
-  if (filterUnit !== 'all') {
-    filteredByUnit = filteredBySearch.filter(
-      (ingredient) =>
-        // If ingredient.unit is undefined or doesn't match, this will filter it out
-        ingredient.unit?.toLowerCase() === filterUnit.toLowerCase()
-    );
-  }
-
-  // ----------------------------------------
-  // 3) Sort by amount (from the second menu)
-  // ----------------------------------------
-  let finalIngredients = [...filteredByUnit];
+  // 2) Sort by amount (one dropdown for "Least" or "Most")
+  let finalIngredients = [...filtered];
   if (sortBy === 'asc') {
-    finalIngredients.sort((a, b) => a.amount - b.amount);
+    finalIngredients.sort((a, b) => a.amount - b.amount);     // least first
   } else if (sortBy === 'desc') {
-    finalIngredients.sort((a, b) => b.amount - a.amount);
+    finalIngredients.sort((a, b) => b.amount - a.amount);     // most first
   }
-  // If sortBy === 'none', just leave them as-is
 
   return (
     <SafeAreaView style={styles.container}>
@@ -114,23 +96,7 @@ export default function IngredientsScreen() {
           />
         </View>
 
-        {/* Dropdowns */}
-        <DropDownPicker
-          open={openUnit}
-          value={filterUnit}
-          items={unitItems}
-          setOpen={setOpenUnit}
-          setValue={setFilterUnit}
-          setItems={setUnitItems}
-          placeholder="Filter by Unit"
-          style={styles.dropdownStyle}
-          containerStyle={styles.dropdownContainer}
-          dropDownContainerStyle={styles.dropdownListStyle}
-          textStyle={styles.dropdownText}
-          zIndex={3000} // Helps ensure this drop-down is on top if multiple are open
-          zIndexInverse={1000}
-        />
-
+        {/* Single Dropdown for sorting */}
         <DropDownPicker
           open={openSort}
           value={sortBy}
@@ -156,8 +122,7 @@ export default function IngredientsScreen() {
               <View style={styles.labelContainer}>
                 <ThemedText style={styles.ingredientName}>{item.name}</ThemedText>
                 <ThemedText style={styles.amount}>
-                  {item.amount}{' '}
-                  {item.unit || 'pieces'}
+                  {item.amount} {item.unit || 'pieces'}
                 </ThemedText>
               </View>
 
@@ -209,7 +174,7 @@ const styles = StyleSheet.create({
     gap: 8,
     marginBottom: 20,
   },
-  // --- Search ---
+  // Search
   searchContainer: {
     marginBottom: 12,
   },
@@ -222,7 +187,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#000',
   },
-  // --- DropDown styling ---
+  // DropDown styling
   dropdownContainer: {
     marginBottom: 12,
   },
@@ -238,9 +203,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#000',
   },
-  // --- Ingredient Card ---
+  // Ingredient Card
   ingredientContainer: {
-    backgroundColor: 'white',
+    backgroundColor: '#fff',
     borderRadius: 10,
     padding: 16,
     marginBottom: 12,
