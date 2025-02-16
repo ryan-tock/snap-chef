@@ -26,6 +26,7 @@ if __name__ == '__main__':
         f"Based on the following list of foods and their quantities: {foods_txt}, "
         "please suggest recipes that use these ingredients. For each recipe, provide "
         "a list of ingredients with the required amounts, step-by-step cooking instructions, "
+        "expected prep time and cook time, nutritional values"
         "and indicate if any additional common ingredients are needed."
     )
 
