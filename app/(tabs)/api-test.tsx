@@ -14,6 +14,7 @@ import {
 import * as ImagePicker from 'expo-image-picker';
 import { MaterialIcons } from '@expo/vector-icons';
 import { CameraView, CameraType, useCameraPermissions, Camera } from 'expo-camera';
+import { useRouter } from 'expo-router';
 
 interface Recipe {
   title: string;
@@ -21,14 +22,49 @@ interface Recipe {
   instructions: string[];
 }
 
+interface Ingredient {
+  name: string;
+  amount: number;
+  unit?: string;
+}
+
 const API_URL = 'http://10.37.163.63:5000'; // Use your actual local IP here
 
 const ApiTest = () => {
+  const router = useRouter();
   const [image, setImage] = useState<string | null>(null);
   const [fridgeContents, setFridgeContents] = useState('');
   const [matchedRecipes, setMatchedRecipes] = useState<Recipe[]>([]);
   const [aiSuggestions, setAiSuggestions] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [ingredients, setIngredients] = useState<Ingredient[]>([]);
+
+  const parseIngredients = (contents: string) => {
+    const ingredientsList: Ingredient[] = [];
+    const lines = contents.split('\n');
+    
+    lines.forEach(line => {
+      const match = line.match(/\*\*([^:]+):\*\*\s*([^,\n]+)/);
+      if (match) {
+        const name = match[1].trim();
+        const quantityStr = match[2].trim();
+        
+        const numericMatch = quantityStr.match(/(\d+)(?:-(\d+))?\s*([a-zA-Z]*)/);
+        if (numericMatch) {
+          const amount = parseInt(numericMatch[2] || numericMatch[1]);
+          const unit = numericMatch[3] || 'pieces';
+          
+          ingredientsList.push({
+            name,
+            amount,
+            unit
+          });
+        }
+      }
+    });
+    
+    return ingredientsList;
+  };
 
   const [facing, setFacing] = useState<CameraType>('back');
   const cameraRef = useRef<CameraView>(null);
@@ -84,11 +120,13 @@ const ApiTest = () => {
 
       if (response.ok) {
         console.log('Setting fridge contents:', data.fridge_contents);
-        setFridgeContents(data.fridge_contents);
+        setFridgeContents(data.fridge_contents || '');
+        const parsedIngredients = parseIngredients(data.fridge_contents);
+        setIngredients(parsedIngredients);
         console.log('Setting matched recipes:', data.matched_recipes);
-        setMatchedRecipes(data.matched_recipes);
+        setMatchedRecipes(Array.isArray(data.matched_recipes) ? data.matched_recipes : []);
         console.log('Setting AI suggestions:', data.ai_suggestions);
-        setAiSuggestions(data.ai_suggestions);
+        setAiSuggestions(data.ai_suggestions || '');
       } else {
         Alert.alert('Error', data.error || 'Failed to analyze image');
       }
@@ -129,6 +167,30 @@ const ApiTest = () => {
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
         <Text style={styles.title}>Snap Chef</Text>
+          
+        <TouchableOpacity 
+          style={styles.ingredientsButton}
+          onPress={() => router.push('/ingredients')}
+        >
+          <MaterialIcons name="kitchen" size={24} color="white" />
+          <Text style={styles.buttonText}>Ingredients</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity 
+          style={styles.recipesButton}
+          onPress={() => router.push('/recipes')}
+        >
+          <MaterialIcons name="restaurant-menu" size={24} color="white" />
+          <Text style={styles.buttonText}>Recipes</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity 
+          style={styles.uploadButton} 
+          onPress={pickImage}
+        >
+          <MaterialIcons name="photo-library" size={24} color="white" />
+          <Text style={styles.uploadButtonText}>Choose Photo</Text>
+        </TouchableOpacity>
 
         {!cameraShown ? (
           <>
@@ -368,7 +430,25 @@ const styles = StyleSheet.create({
   buttonRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-  }
+  },
+  ingredientsButton: {
+    backgroundColor: '#1976D2',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 15,
+    borderRadius: 10,
+    marginBottom: 20,
+  },
+  recipesButton: {
+    backgroundColor: '#FF5722',  // Orange color to distinguish from other buttons
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 15,
+    borderRadius: 10,
+    marginBottom: 20,
+  },
 });
 
 export default ApiTest;

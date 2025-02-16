@@ -33,4 +33,5 @@ if __name__ == '__main__':
         model=model,
         contents=[recipe_prompt]
     )
+
     print("Recipe suggestions:", recipe_response.text)
