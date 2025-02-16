@@ -222,9 +222,16 @@ const ApiTest = () => {
                 </TouchableOpacity>
               </View>
             ) : (
-              <TouchableOpacity style={styles.captureButton} onPress={takePicture}>
-                <Text>📸 Take Photo</Text>
-              </TouchableOpacity>
+              <View style={styles.buttonRow}>
+                <TouchableOpacity style={styles.captureButton} onPress={function(){
+                  setCameraShown(false);
+                }}>
+                  <Text>❌ Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.captureButton} onPress={takePicture}>
+                  <Text>📸 Take Photo</Text>
+                </TouchableOpacity>
+              </View>
             )}
           </>
         )}
