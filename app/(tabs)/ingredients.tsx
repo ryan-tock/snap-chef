@@ -212,17 +212,19 @@ export default function IngredientsScreen() {
           renderItem={({ item }) => (
             <View style={styles.ingredientContainer} key={item.id}>
               <View style={styles.headerRow}>
-                <TouchableOpacity 
-                  onPress={() => {
-                    setEditingIngredient(item);
-                    setEditedName(item.name);
-                    setEditModalVisible(true);
-                  }}
-                >
-                  <ThemedText style={styles.ingredientName}>
-                    {item.name} {item.unit ? `(${item.unit})` : ''}
-                  </ThemedText>
-                </TouchableOpacity>
+                <View style={styles.nameContainer}>
+                  <TouchableOpacity 
+                    onPress={() => {
+                      setEditingIngredient(item);
+                      setEditedName(item.name);
+                      setEditModalVisible(true);
+                    }}
+                  >
+                    <ThemedText style={styles.ingredientName} numberOfLines={2}>
+                      {item.name} {item.unit ? `(${item.unit})` : ''}
+                    </ThemedText>
+                  </TouchableOpacity>
+                </View>
 
                 <View style={styles.expiringContainer}>
                   <ThemedText style={[
@@ -492,13 +494,25 @@ const styles = StyleSheet.create({
   headerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     marginBottom: 8,
+  },
+  nameContainer: {
+    flex: 1,
+    marginRight: 8,
+  },
+  ingredientName: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#2E7D32',
+    flexWrap: 'wrap',
   },
   expiringContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
+    minWidth: 140,
+    justifyContent: 'flex-end',
   },
   expiringText: {
     color: '#FF5722',
@@ -509,14 +523,7 @@ const styles = StyleSheet.create({
     opacity: 0,
   },
   checkboxContainer: {
-    padding: 4,  // For better touch target
-  },
-  ingredientName: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#2E7D32',
-    flex: 1,  // Allow name to shrink if needed
-    marginRight: 8,  // Space between name and checkbox
+    padding: 4,
   },
   amountRow: {
     flexDirection: 'row',
@@ -537,7 +544,7 @@ const styles = StyleSheet.create({
   },
   deleteButton: {
     backgroundColor: '#ffebee',
-    marginLeft: 'auto',  // Push to right
+    marginLeft: 'auto',
   },
   fab: {
     position: 'absolute',
