@@ -50,11 +50,11 @@ const ApiTest = () => {
         const cleanName = name.replace(/\*/g, '').trim();
         
         if (cleanName && quantity) {
-          // Handle ranges like "10-15" and extract numbers
           const numbers = quantity.match(/\d+/g);
           let amount = 0;
-          let unit = quantity.replace(/[0-9-]/g, '').trim();
+          let unit = '';
           
+          // Extract number first
           if (numbers) {
             if (numbers.length === 2) {
               amount = Math.round((parseInt(numbers[0]) + parseInt(numbers[1])) / 2);
@@ -63,20 +63,32 @@ const ApiTest = () => {
             }
           } else {
             amount = 1;
-            if (quantity.toLowerCase().includes('bag')) {
-              unit = 'bag';
-            } else if (quantity.toLowerCase().includes('cup')) {
-              unit = 'cup';
-            } else {
-              unit = quantity.trim();
-            }
+          }
+
+          // Determine unit based on context
+          const lowerQuantity = quantity.toLowerCase();
+          if (lowerQuantity.includes('bag') || lowerQuantity.includes('container')) {
+            // If it's a bag/container WITH a number, use 'piece' instead
+            unit = amount > 1 ? 'piece' : 'bag';
+          } else if (lowerQuantity.includes('cup')) {
+            unit = 'cup';
+          } else if (lowerQuantity.includes('slice')) {
+            unit = 'slice';
+          } else if (lowerQuantity.includes('pack')) {
+            unit = amount > 1 ? 'piece' : 'pack';
+          } else if (lowerQuantity.includes('bottle')) {
+            unit = amount > 1 ? 'piece' : 'bottle';
+          } else if (lowerQuantity.includes('can')) {
+            unit = amount > 1 ? 'piece' : 'can';
+          } else {
+            unit = 'piece';
           }
 
           ingredientsList.push({
             id: `ingredient-${index}-${Date.now()}`,
             name: cleanName,
             amount: amount,
-            unit: unit || 'pieces'
+            unit: unit
           });
         }
       }
