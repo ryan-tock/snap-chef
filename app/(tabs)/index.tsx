@@ -187,120 +187,118 @@ const ApiTest = () => {
 
   return (
     <ScrollView style={styles.container}>
-`      <SafeAreaView style={styles.container}>
-        <View style={styles.content}>
-          <Text style={styles.title}>Snap Chef</Text>
+      <View style={styles.content}>
+        <Text style={styles.title}>Snap Chef</Text>
 
-          {!cameraShown ? (
-            <>
-              <TouchableOpacity style={styles.uploadButton} onPress={pickImage}>
-                <MaterialIcons name="photo-library" size={24} color="white" />
-                <Text style={styles.uploadButtonText}>Choose Photo</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.uploadButton}
-                onPress={function() {
+        {!cameraShown ? (
+          <>
+            <TouchableOpacity style={styles.uploadButton} onPress={pickImage}>
+              <MaterialIcons name="photo-library" size={24} color="white" />
+              <Text style={styles.uploadButtonText}>Choose Photo</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.uploadButton}
+              onPress={function() {
+                setImage(null);
+                setCameraShown(true);
+              }}
+            >
+            <MaterialIcons name="photo-camera" size={24} color="white" />
+            <Text style={styles.uploadButtonText}>Take Photo</Text>
+            </TouchableOpacity>
+          </>
+        ) : (
+          <>
+            {image ? (
+              <Image source={{ uri : image }} style={styles.camera} />
+            ) : (
+              <CameraView ref={cameraRef} style={styles.camera} facing={facing} />
+            )}
+            {image ? (
+              <View style={styles.buttonRow}>
+                <TouchableOpacity style={styles.captureButton} onPress={function() {
                   setImage(null);
-                  setCameraShown(true);
-                }}
-              >
-              <MaterialIcons name="photo-camera" size={24} color="white" />
-              <Text style={styles.uploadButtonText}>Take Photo</Text>
-              </TouchableOpacity>
-            </>
-          ) : (
-            <>
-              {image ? (
-                <Image source={{ uri : image }} style={styles.camera} />
-              ) : (
-                <CameraView ref={cameraRef} style={styles.camera} facing={facing} />
-              )}
-              {image ? (
-                <View style={styles.buttonRow}>
-                  <TouchableOpacity style={styles.captureButton} onPress={function() {
-                    setImage(null);
-                  }}>
-                    <Text>🗑 Clear Photo</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={styles.captureButton} onPress={function(){
-                    setCameraShown(false);
-                  }}>
-                    <Text>✅ Select Photo</Text>
-                  </TouchableOpacity>
-                </View>
-              ) : (
-                <View style={styles.buttonRow}>
-                  <TouchableOpacity style={styles.captureButton} onPress={function(){
-                    setCameraShown(false);
-                  }}>
-                    <Text>❌ Cancel</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={styles.captureButton} onPress={takePicture}>
-                    <Text>📸 Take Photo</Text>
-                  </TouchableOpacity>
-                </View>
-              )}
-            </>
-          )}
+                }}>
+                  <Text>🗑 Clear Photo</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.captureButton} onPress={function(){
+                  setCameraShown(false);
+                }}>
+                  <Text>✅ Select Photo</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <View style={styles.buttonRow}>
+                <TouchableOpacity style={styles.captureButton} onPress={function(){
+                  setCameraShown(false);
+                }}>
+                  <Text>❌ Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.captureButton} onPress={takePicture}>
+                  <Text>📸 Take Photo</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </>
+        )}
 
-          {image && !cameraShown && (
-            <View style={styles.imageContainer}>
-              <Image 
-                source={{ uri: image }} 
-                style={styles.image} 
-              />
-              <TouchableOpacity 
-                style={styles.analyzeButton}
-                onPress={handleImageUpload}
-                disabled={isLoading}
-              >
-                <MaterialIcons name="search" size={24} color="white" />
-                <Text style={styles.buttonText}>Analyze Fridge</Text>
-              </TouchableOpacity>
-            </View>
-          )}
+        {image && !cameraShown && (
+          <View style={styles.imageContainer}>
+            <Image 
+              source={{ uri: image }} 
+              style={styles.image} 
+            />
+            <TouchableOpacity 
+              style={styles.analyzeButton}
+              onPress={handleImageUpload}
+              disabled={isLoading}
+            >
+              <MaterialIcons name="search" size={24} color="white" />
+              <Text style={styles.buttonText}>Analyze Fridge</Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
-          {isLoading && (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color="#4CAF50" />
-              <Text style={styles.loadingText}>Analyzing your fridge...</Text>
-            </View>
-          )}
+        {isLoading && (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#4CAF50" />
+            <Text style={styles.loadingText}>Analyzing your fridge...</Text>
+          </View>
+        )}
 
-          {fridgeContents && (
-            <View style={styles.card}>
-              <Text style={styles.cardTitle}>Fridge Contents</Text>
-              <Text style={styles.cardText}>{fridgeContents}</Text>
-            </View>
-          )}
+        {fridgeContents && (
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Fridge Contents</Text>
+            <Text style={styles.cardText}>{fridgeContents}</Text>
+          </View>
+        )}
 
-          {matchedRecipes.length > 0 && (
-            <View style={styles.card}>
-              <Text style={styles.cardTitle}>Matched Recipes</Text>
-              {matchedRecipes.map((recipe, index) => (
-                <View key={index} style={styles.recipeCard}>
-                  <Text style={styles.recipeTitle}>{recipe.title}</Text>
-                  <Text style={styles.sectionTitle}>Ingredients</Text>
-                  {recipe.ingredients.map((ingredient, i) => (
-                    <Text key={i} style={styles.listItem}>• {ingredient}</Text>
-                  ))}
-                  <Text style={styles.sectionTitle}>Instructions</Text>
-                  {recipe.instructions.map((step, i) => (
-                    <Text key={i} style={styles.listItem}>{i + 1}. {step}</Text>
-                  ))}
-                </View>
-              ))}
-            </View>
-          )}
+        {matchedRecipes.length > 0 && (
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Matched Recipes</Text>
+            {matchedRecipes.map((recipe, index) => (
+              <View key={index} style={styles.recipeCard}>
+                <Text style={styles.recipeTitle}>{recipe.title}</Text>
+                <Text style={styles.sectionTitle}>Ingredients</Text>
+                {recipe.ingredients.map((ingredient, i) => (
+                  <Text key={i} style={styles.listItem}>• {ingredient}</Text>
+                ))}
+                <Text style={styles.sectionTitle}>Instructions</Text>
+                {recipe.instructions.map((step, i) => (
+                  <Text key={i} style={styles.listItem}>{i + 1}. {step}</Text>
+                ))}
+              </View>
+            ))}
+          </View>
+        )}
 
-          {aiSuggestions && (
-            <View style={styles.card}>
-              <Text style={styles.cardTitle}>AI Recipe Suggestions</Text>
-              <Text style={styles.cardText}>{aiSuggestions}</Text>
-            </View>
-          )}
-        </View>
-      </SafeAreaView>`
+        {aiSuggestions && (
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>AI Recipe Suggestions</Text>
+            <Text style={styles.cardText}>{aiSuggestions}</Text>
+          </View>
+        )}
+      </View>
     </ScrollView>
   );
 };
