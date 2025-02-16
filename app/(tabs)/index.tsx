@@ -27,6 +27,7 @@ interface Recipe {
 }
 
 interface Ingredient {
+  id: string;
   name: string;
   amount: number;
   unit?: string;
@@ -47,37 +48,51 @@ const ApiTest = () => {
     const ingredientsList: Ingredient[] = [];
     const lines = contents.split('\n');
     
-    lines.forEach(line => {
+    lines.forEach((line, index) => {
       if (line.includes(':')) {
         const [name, quantity] = line.split(':').map(s => s.trim());
         const cleanName = name.replace(/\*/g, '').trim();
         
         if (cleanName && quantity) {
-          // Handle ranges like "10-15" and extract numbers
           const numbers = quantity.match(/\d+/g);
           let amount = 0;
-          let unit = quantity.replace(/[0-9-]/g, '').trim();
+          let unit = '';
           
+          // Extract number first
           if (numbers) {
             if (numbers.length === 2) {
-              // If range (e.g., "10-15"), take average
               amount = Math.round((parseInt(numbers[0]) + parseInt(numbers[1])) / 2);
             } else {
-              // Single number
               amount = parseInt(numbers[0]);
             }
+          } else {
+            amount = 1;
           }
 
-          // Handle special cases like "A small amount" or "A dollop"
-          if (!amount) {
-            amount = 1;
-            unit = quantity.trim();
+          // Determine unit based on context
+          const lowerQuantity = quantity.toLowerCase();
+          if (lowerQuantity.includes('bag') || lowerQuantity.includes('container')) {
+            // If it's a bag/container WITH a number, use 'piece' instead
+            unit = amount > 1 ? 'piece' : 'bag';
+          } else if (lowerQuantity.includes('cup')) {
+            unit = 'cup';
+          } else if (lowerQuantity.includes('slice')) {
+            unit = 'slice';
+          } else if (lowerQuantity.includes('pack')) {
+            unit = amount > 1 ? 'piece' : 'pack';
+          } else if (lowerQuantity.includes('bottle')) {
+            unit = amount > 1 ? 'piece' : 'bottle';
+          } else if (lowerQuantity.includes('can')) {
+            unit = amount > 1 ? 'piece' : 'can';
+          } else {
+            unit = 'piece';
           }
 
           ingredientsList.push({
+            id: `ingredient-${index}-${Date.now()}`,
             name: cleanName,
             amount: amount,
-            unit: unit || 'pieces'
+            unit: unit
           });
         }
       }

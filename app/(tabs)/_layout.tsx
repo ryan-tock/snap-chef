@@ -3,20 +3,23 @@ import React from 'react';
 import { Platform } from 'react-native';
 
 import { HapticTab } from '@/components/HapticTab';
-import { IconSymbol } from '@/components/ui/IconSymbol';
+import { IconSymbol } from '@/components/ui/pIconSymbol';
 import TabBarBackground from '@/components/ui/TabBarBackground';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { useThemeToggle } from '@/components/ThemeToggleContext';
 
 import Entypo from '@expo/vector-icons/Entypo';
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
+  const { isDark } = useThemeToggle();
+  const currentColorScheme = isDark ? 'dark' : 'light';
+
 
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
+        tabBarActiveTintColor: Colors[currentColorScheme].tint,
         headerShown: false,
         tabBarButton: HapticTab,
         tabBarBackground: TabBarBackground,
