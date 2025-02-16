@@ -1,3 +1,4 @@
+// ingredients.tsx
 import { 
   StyleSheet,
   SafeAreaView,
@@ -16,6 +17,8 @@ import DropDownPicker from 'react-native-dropdown-picker';
 
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
+import { Colors } from '@/constants/Colors';
+import { useThemeToggle } from '@/components/ThemeToggleContext';
 
 interface Ingredient {
   id: string;
@@ -27,19 +30,19 @@ interface Ingredient {
 
 export default function IngredientsScreen() {
   const params = useLocalSearchParams();
+  const { isDark } = useThemeToggle();
+  const currentColorScheme = isDark ? 'dark' : 'light';
 
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
-
-  // --- Search ---
   const [searchQuery, setSearchQuery] = useState('');
 
-  // --- Single Drop-Down for Sorting (Least/Most) ---
+  // Single Drop-Down for Sorting (Least/Most)
   const [openSort, setOpenSort] = useState(false);
   const [sortBy, setSortBy] = useState('none');
   const [sortItems, setSortItems] = useState([
     { label: 'No Sort', value: 'none' },
-    { label: 'Least Ingredients', value: 'asc' },   // ascending by amount
-    { label: 'Most Ingredients', value: 'desc' },  // descending by amount
+    { label: 'Least Ingredients', value: 'asc' },
+    { label: 'Most Ingredients', value: 'desc' },
   ]);
 
   const [modalVisible, setModalVisible] = useState(false);
@@ -51,7 +54,7 @@ export default function IngredientsScreen() {
   const [editingIngredient, setEditingIngredient] = useState<Ingredient | null>(null);
   const [editedName, setEditedName] = useState('');
 
-  // Add new state for amount editing
+  // Modal for editing amount
   const [amountModalVisible, setAmountModalVisible] = useState(false);
   const [editedAmount, setEditedAmount] = useState('');
 
@@ -75,7 +78,7 @@ export default function IngredientsScreen() {
     );
   };
 
-  // For the horizontal bar width
+  // For the horizontal bar width (if needed)
   const getBarWidth = (amount: number) => {
     const maxAmount = Math.max(...ingredients.map((i) => i.amount));
     return maxAmount === 0 ? 0 : (amount / maxAmount) * 100;
@@ -86,12 +89,12 @@ export default function IngredientsScreen() {
     ingredient.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // 2) Sort by amount (one dropdown for "Least" or "Most")
+  // 2) Sort by amount
   let finalIngredients = [...filtered];
   if (sortBy === 'asc') {
-    finalIngredients.sort((a, b) => a.amount - b.amount);     // least first
+    finalIngredients.sort((a, b) => a.amount - b.amount);
   } else if (sortBy === 'desc') {
-    finalIngredients.sort((a, b) => b.amount - a.amount);     // most first
+    finalIngredients.sort((a, b) => b.amount - a.amount);
   }
 
   const addIngredient = () => {
@@ -147,19 +150,19 @@ export default function IngredientsScreen() {
     );
   };
 
-  // Add new function for editing amount
+  // Modal function for editing amount
   const editAmount = () => {
     if (!editingIngredient) return;
     
-    const newAmount = parseInt(editedAmount);
-    if (isNaN(newAmount)) {
+    const newAmt = parseInt(editedAmount);
+    if (isNaN(newAmt)) {
       Alert.alert('Error', 'Please enter a valid number');
       return;
     }
 
     setIngredients(prev => prev.map(ing => 
       ing.id === editingIngredient.id
-        ? { ...ing, amount: newAmount }
+        ? { ...ing, amount: newAmt }
         : ing
     ));
     
@@ -169,25 +172,34 @@ export default function IngredientsScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: Colors[currentColorScheme].background }]}>
       <View style={styles.content}>
         {/* Title */}
         <ThemedView style={styles.titleContainer}>
-          <ThemedText type="title">Ingredients</ThemedText>
+          <ThemedText type="title" style={{ color: Colors[currentColorScheme].text }}>
+            Ingredients
+          </ThemedText>
         </ThemedView>
 
         {/* Search Bar */}
         <View style={styles.searchContainer}>
           <TextInput
-            style={styles.searchInput}
+            style={[
+              styles.searchInput,
+              { 
+                color: Colors[currentColorScheme].text, 
+                borderColor: Colors[currentColorScheme].activeTabBorder,
+                backgroundColor: Colors[currentColorScheme].cardBackground,
+              }
+            ]}
             placeholder="Search ingredients..."
-            placeholderTextColor="#999"
+            placeholderTextColor={Colors[currentColorScheme].secondaryText}
             value={searchQuery}
             onChangeText={setSearchQuery}
           />
         </View>
 
-        {/* Single Dropdown for sorting */}
+        {/* Dropdown for Sorting */}
         <DropDownPicker
           open={openSort}
           value={sortBy}
@@ -196,10 +208,16 @@ export default function IngredientsScreen() {
           setValue={setSortBy}
           setItems={setSortItems}
           placeholder="Sort by Amount"
-          style={styles.dropdownStyle}
+          style={[
+            styles.dropdownStyle,
+            { backgroundColor: Colors[currentColorScheme].cardBackground, borderColor: Colors[currentColorScheme].activeTabBorder }
+          ]}
           containerStyle={styles.dropdownContainer}
-          dropDownContainerStyle={styles.dropdownListStyle}
-          textStyle={styles.dropdownText}
+          dropDownContainerStyle={[
+            styles.dropdownListStyle,
+            { backgroundColor: Colors[currentColorScheme].cardBackground, borderColor: Colors[currentColorScheme].activeTabBorder }
+          ]}
+          textStyle={[styles.dropdownText, { color: Colors[currentColorScheme].text }]}
           zIndex={2000} 
           zIndexInverse={2000}
         />
@@ -210,7 +228,7 @@ export default function IngredientsScreen() {
           keyExtractor={(item) => item.id}
           extraData={ingredients}
           renderItem={({ item }) => (
-            <View style={styles.ingredientContainer} key={item.id}>
+            <View style={[styles.ingredientContainer, { backgroundColor: Colors[currentColorScheme].cardBackground }]} key={item.id}>
               <View style={styles.headerRow}>
                 <TouchableOpacity 
                   onPress={() => {
@@ -219,7 +237,7 @@ export default function IngredientsScreen() {
                     setEditModalVisible(true);
                   }}
                 >
-                  <ThemedText style={styles.ingredientName}>
+                  <ThemedText style={[styles.ingredientName, { color: Colors[currentColorScheme].text }]}>
                     {item.name} {item.unit ? `(${item.unit})` : ''}
                   </ThemedText>
                 </TouchableOpacity>
@@ -244,7 +262,7 @@ export default function IngredientsScreen() {
                     <MaterialIcons 
                       name={item.isExpiring ? "check-box" : "check-box-outline-blank"} 
                       size={24} 
-                      color="#FF5722"
+                      color={Colors[currentColorScheme].tint}
                     />
                   </TouchableOpacity>
                 </View>
@@ -255,7 +273,7 @@ export default function IngredientsScreen() {
                   onPress={() => updateAmount(item.id, false)}
                   style={styles.button}
                 >
-                  <MaterialIcons name="remove" size={24} color="#2E7D32" />
+                  <MaterialIcons name="remove" size={24} color={Colors[currentColorScheme].tint} />
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -265,14 +283,16 @@ export default function IngredientsScreen() {
                     setAmountModalVisible(true);
                   }}
                 >
-                  <ThemedText style={styles.amount}>{item.amount}</ThemedText>
+                  <ThemedText style={[styles.amount, { color: Colors[currentColorScheme].text }]}>
+                    {item.amount}
+                  </ThemedText>
                 </TouchableOpacity>
 
                 <TouchableOpacity
                   onPress={() => updateAmount(item.id, true)}
                   style={styles.button}
                 >
-                  <MaterialIcons name="add" size={24} color="#2E7D32" />
+                  <MaterialIcons name="add" size={24} color={Colors[currentColorScheme].tint} />
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -286,6 +306,7 @@ export default function IngredientsScreen() {
           )}
         />
 
+        {/* Add Ingredient Modal */}
         <Modal
           animationType="slide"
           transparent={true}
@@ -293,27 +314,32 @@ export default function IngredientsScreen() {
           onRequestClose={() => setModalVisible(false)}
         >
           <View style={styles.modalContainer}>
-            <View style={styles.modalContent}>
-              <ThemedText style={styles.modalTitle}>Add New Ingredient</ThemedText>
+            <View style={[styles.modalContent, { backgroundColor: Colors[currentColorScheme].cardBackground }]}>
+              <ThemedText style={[styles.modalTitle, { color: Colors[currentColorScheme].text }]}>
+                Add New Ingredient
+              </ThemedText>
               
               <TextInput
-                style={styles.modalInput}
+                style={[styles.modalInput, { color: Colors[currentColorScheme].text, borderColor: Colors[currentColorScheme].activeTabBorder }]}
                 placeholder="Ingredient Name"
+                placeholderTextColor={Colors[currentColorScheme].secondaryText}
                 value={newIngredientName}
                 onChangeText={setNewIngredientName}
               />
               
               <TextInput
-                style={styles.modalInput}
+                style={[styles.modalInput, { color: Colors[currentColorScheme].text, borderColor: Colors[currentColorScheme].activeTabBorder }]}
                 placeholder="Amount"
+                placeholderTextColor={Colors[currentColorScheme].secondaryText}
                 value={newIngredientAmount}
                 onChangeText={setNewIngredientAmount}
                 keyboardType="numeric"
               />
               
               <TextInput
-                style={styles.modalInput}
+                style={[styles.modalInput, { color: Colors[currentColorScheme].text, borderColor: Colors[currentColorScheme].activeTabBorder }]}
                 placeholder="Unit (e.g., pieces, cups)"
+                placeholderTextColor={Colors[currentColorScheme].secondaryText}
                 value={newIngredientUnit}
                 onChangeText={setNewIngredientUnit}
               />
@@ -337,6 +363,7 @@ export default function IngredientsScreen() {
           </View>
         </Modal>
 
+        {/* Edit Ingredient Modal */}
         <Modal
           animationType="slide"
           transparent={true}
@@ -344,12 +371,15 @@ export default function IngredientsScreen() {
           onRequestClose={() => setEditModalVisible(false)}
         >
           <View style={styles.modalContainer}>
-            <View style={styles.modalContent}>
-              <ThemedText style={styles.modalTitle}>Edit Ingredient</ThemedText>
+            <View style={[styles.modalContent, { backgroundColor: Colors[currentColorScheme].cardBackground }]}>
+              <ThemedText style={[styles.modalTitle, { color: Colors[currentColorScheme].text }]}>
+                Edit Ingredient
+              </ThemedText>
               
               <TextInput
-                style={styles.modalInput}
+                style={[styles.modalInput, { color: Colors[currentColorScheme].text, borderColor: Colors[currentColorScheme].activeTabBorder }]}
                 placeholder="Ingredient Name"
+                placeholderTextColor={Colors[currentColorScheme].secondaryText}
                 value={editedName}
                 onChangeText={setEditedName}
               />
@@ -377,7 +407,7 @@ export default function IngredientsScreen() {
           </View>
         </Modal>
 
-        {/* Add new modal for amount editing */}
+        {/* Edit Amount Modal */}
         <Modal
           animationType="slide"
           transparent={true}
@@ -385,12 +415,15 @@ export default function IngredientsScreen() {
           onRequestClose={() => setAmountModalVisible(false)}
         >
           <View style={styles.modalContainer}>
-            <View style={styles.modalContent}>
-              <ThemedText style={styles.modalTitle}>Edit Amount</ThemedText>
+            <View style={[styles.modalContent, { backgroundColor: Colors[currentColorScheme].cardBackground }]}>
+              <ThemedText style={[styles.modalTitle, { color: Colors[currentColorScheme].text }]}>
+                Edit Amount
+              </ThemedText>
               
               <TextInput
-                style={styles.modalInput}
+                style={[styles.modalInput, { color: Colors[currentColorScheme].text, borderColor: Colors[currentColorScheme].activeTabBorder }]}
                 placeholder="Enter new amount"
+                placeholderTextColor={Colors[currentColorScheme].secondaryText}
                 value={editedAmount}
                 onChangeText={setEditedAmount}
                 keyboardType="numeric"
@@ -430,9 +463,6 @@ export default function IngredientsScreen() {
   );
 }
 
-// ---------------------------------
-//            Styles
-// ---------------------------------
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -453,41 +483,32 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     borderWidth: 1,
-    borderColor: '#ccc',
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: Platform.OS === 'ios' ? 12 : 8,
     fontSize: 16,
-    color: '#fff',
-    backgroundColor: '#333',
   },
-  // DropDown styling
+  // Dropdown styling
   dropdownContainer: {
     marginBottom: 12,
   },
   dropdownStyle: {
-    backgroundColor: '#f5f5f5',
-    borderColor: '#ccc',
+    borderWidth: 1,
+    borderRadius: 8,
   },
   dropdownListStyle: {
-    backgroundColor: '#fff',
-    borderColor: '#ccc',
+    borderWidth: 1,
+    borderRadius: 8,
   },
   dropdownText: {
     fontSize: 16,
-    color: '#000',
   },
   // Ingredient Card
   ingredientContainer: {
-    backgroundColor: '#fff',
     borderRadius: 10,
     padding: 16,
     marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    // shadow, elevation, etc., can be added as needed
   },
   headerRow: {
     flexDirection: 'row',
@@ -509,14 +530,13 @@ const styles = StyleSheet.create({
     opacity: 0,
   },
   checkboxContainer: {
-    padding: 4,  // For better touch target
+    padding: 4,
   },
   ingredientName: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#2E7D32',
-    flex: 1,  // Allow name to shrink if needed
-    marginRight: 8,  // Space between name and checkbox
+    flex: 1,
+    marginRight: 8,
   },
   amountRow: {
     flexDirection: 'row',
@@ -525,19 +545,18 @@ const styles = StyleSheet.create({
   },
   amount: {
     fontSize: 16,
-    color: '#666',
     paddingHorizontal: 16,
     minWidth: 80,
     textAlign: 'center',
   },
   button: {
     padding: 8,
-    backgroundColor: '#E8F5E9',
     borderRadius: 20,
+    backgroundColor: '#E8F5E9',
   },
   deleteButton: {
     backgroundColor: '#ffebee',
-    marginLeft: 'auto',  // Push to right
+    marginLeft: 'auto',
   },
   fab: {
     position: 'absolute',
@@ -550,62 +569,48 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
   },
-  
+  // Modal styles
   modalContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: 'rgba(0,0,0,0.5)',
   },
-  
   modalContent: {
-    backgroundColor: 'white',
     borderRadius: 10,
     padding: 20,
     width: '80%',
     elevation: 5,
   },
-  
   modalTitle: {
     fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 15,
   },
-  
   modalInput: {
     borderWidth: 1,
-    borderColor: '#ccc',
     borderRadius: 5,
     padding: 10,
     marginBottom: 10,
   },
-  
   modalButtons: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginTop: 15,
   },
-  
   modalButton: {
     padding: 10,
     borderRadius: 5,
     width: '45%',
     alignItems: 'center',
   },
-  
   addButton: {
     backgroundColor: '#4CAF50',
   },
-  
   cancelButton: {
     backgroundColor: '#666',
   },
-  
   buttonText: {
     color: 'white',
     fontWeight: '600',

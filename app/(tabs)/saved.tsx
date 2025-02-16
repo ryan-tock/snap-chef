@@ -1,3 +1,4 @@
+// saved.tsx
 import React, { useState } from 'react';
 import {
   SafeAreaView,
@@ -8,8 +9,9 @@ import {
 } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
+import { Colors } from '@/constants/Colors';
+import { useThemeToggle } from '@/components/ThemeToggleContext';
 
-// Define your interfaces
 interface Ingredient {
   name: string;
   have: boolean;
@@ -26,6 +28,9 @@ interface Recipe {
 }
 
 export default function SavedRecipes() {
+  const { isDark } = useThemeToggle();
+  const currentColorScheme = isDark ? 'dark' : 'light';
+
   // Example list of saved recipes
   const savedRecipes: Recipe[] = [
     {
@@ -75,29 +80,32 @@ export default function SavedRecipes() {
     return (
       <View style={styles.recipeContainer}>
         <TouchableOpacity onPress={() => setIsExpanded(!isExpanded)}>
-          <ThemedView style={styles.recipeTab}>
-            <ThemedText style={styles.recipeName}>{recipe.name}</ThemedText>
-            <ThemedText style={styles.recipeDescription}>
+          <ThemedView style={[styles.recipeTab, { backgroundColor: Colors[currentColorScheme].cardBackground }]}>
+            <ThemedText style={[styles.recipeName, { color: Colors[currentColorScheme].text }]}>{recipe.name}</ThemedText>
+            <ThemedText style={[styles.recipeDescription, { color: Colors[currentColorScheme].secondaryText }]}>
               {recipe.description}
             </ThemedText>
           </ThemedView>
         </TouchableOpacity>
         {isExpanded && (
-          <ThemedView style={styles.recipeDetails}>
-            <ThemedText style={styles.detailTitle}>Ingredients:</ThemedText>
+          <ThemedView style={[styles.recipeDetails, { backgroundColor: Colors[currentColorScheme].cardBackground }]}>
+            <ThemedText style={[styles.detailTitle, { color: Colors[currentColorScheme].text }]}>Ingredients:</ThemedText>
             {recipe.ingredients.map((ing, index) => (
-              <ThemedText key={index.toString()} style={styles.ingredientText}>
+              <ThemedText
+                key={index.toString()}
+                style={[styles.ingredientText, { color: Colors[currentColorScheme].secondaryText }]}
+              >
                 {ing.name}: {ing.have ? 'Available' : 'Missing'}
               </ThemedText>
             ))}
-            <ThemedText style={styles.detailTitle}>Time:</ThemedText>
-            <ThemedText style={styles.recipeTime}>
+            <ThemedText style={[styles.detailTitle, { color: Colors[currentColorScheme].text }]}>Time:</ThemedText>
+            <ThemedText style={[styles.recipeTime, { color: Colors[currentColorScheme].secondaryText }]}>
               Prep: {recipe.prepTime}m, Cook: {recipe.cookTime}m
             </ThemedText>
-            <ThemedText style={styles.detailTitle}>
+            <ThemedText style={[styles.detailTitle, { color: Colors[currentColorScheme].text }]}>
               Nutritional Values:
             </ThemedText>
-            <ThemedText style={styles.nutritionText}>
+            <ThemedText style={[styles.nutritionText, { color: Colors[currentColorScheme].secondaryText }]}>
               {recipe.nutritionalValues}
             </ThemedText>
           </ThemedView>
@@ -107,7 +115,7 @@ export default function SavedRecipes() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: Colors[currentColorScheme].background }]}>
       <FlatList
         data={savedRecipes}
         keyExtractor={(item) => item.id}
@@ -120,7 +128,6 @@ export default function SavedRecipes() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
     padding: 12,
   },
   recipeContainer: {
@@ -130,43 +137,35 @@ const styles = StyleSheet.create({
   },
   recipeTab: {
     padding: 12,
-    backgroundColor: '#222',
   },
   recipeName: {
-    color: '#fff',
     fontSize: 18,
     fontWeight: '600',
   },
   recipeDescription: {
-    color: '#ccc',
     fontSize: 14,
     marginVertical: 4,
   },
   recipeDetails: {
-    backgroundColor: '#333',
     padding: 12,
     borderTopWidth: 1,
     borderTopColor: '#444',
   },
   detailTitle: {
-    color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
     marginBottom: 4,
   },
   ingredientText: {
-    color: '#ddd',
     fontSize: 14,
     marginLeft: 8,
     marginBottom: 2,
   },
   recipeTime: {
-    color: '#ddd',
     fontSize: 14,
     marginTop: 4,
   },
   nutritionText: {
-    color: '#ddd',
     fontSize: 14,
     marginTop: 4,
   },

@@ -1,3 +1,4 @@
+// recipes.tsx
 import React, { useState } from 'react';
 import {
   SafeAreaView,
@@ -12,6 +13,8 @@ import DropDownPicker from 'react-native-dropdown-picker';
 
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
+import { Colors } from '@/constants/Colors';
+import { useThemeToggle } from '@/components/ThemeToggleContext';
 
 // Define your interfaces
 interface Ingredient {
@@ -23,29 +26,22 @@ interface Recipe {
   id: string;
   name: string;
   category: string;
-  description: string; // One-line description from Gemini
+  description: string;
   ingredients: Ingredient[];
-  prepTime: number; // in minutes
-  cookTime: number; // in minutes
-  nutritionalValues: string; // e.g., "500 kcal, 20g protein, etc."
+  prepTime: number;
+  cookTime: number;
+  nutritionalValues: string;
 }
 
-// Custom component for the sort icon (three lines aligned to the left)
-const SortIcon = () => (
-  <View style={styles.sortIconContainer}>
-    <View style={styles.sortLineTop} />
-    <View style={styles.sortLineMiddle} />
-    <View style={styles.sortLineMid} />
-    <View style={styles.sortLineBottom} />
-  </View>
-);
-
 export default function HomeScreen() {
+  const { isDark } = useThemeToggle();
+  const currentColorScheme = isDark ? 'dark' : 'light';
+
   const [searchQuery, setSearchQuery] = useState('');
 
   // DropDownPicker states for filtering categories
   const [open, setOpen] = useState(false);
-  const [value, setValue] = useState('all'); // Current filter value
+  const [value, setValue] = useState('all');
   const [items, setItems] = useState([
     { label: 'All', value: 'all' },
     { label: 'Breakfast', value: 'Breakfast' },
@@ -61,7 +57,7 @@ export default function HomeScreen() {
     { label: 'Total Time', value: 'time' },
   ];
 
-  // Example list of recipes with additional properties
+  // Example list of recipes
   const recipes: Recipe[] = [
     {
       id: '1',
@@ -107,12 +103,12 @@ export default function HomeScreen() {
     },
   ];
 
-  // 1) Filter by search text
+  // Filter by search text
   const filteredBySearch = recipes.filter((recipe) =>
     recipe.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // 2) Filter by category drop-down (unless "all" is selected)
+  // Filter by category drop-down (unless "all" is selected)
   let finalRecipes = filteredBySearch;
   if (value !== 'all') {
     finalRecipes = filteredBySearch.filter(
@@ -120,75 +116,81 @@ export default function HomeScreen() {
     );
   }
 
-  // 3) Sorting
+  // Sorting
   finalRecipes = finalRecipes.slice().sort((a, b) => {
-    // Calculate percentages for matching ingredients
     const aAvailable = a.ingredients.filter((ing) => ing.have).length;
     const bAvailable = b.ingredients.filter((ing) => ing.have).length;
     const aPercent = aAvailable / a.ingredients.length;
     const bPercent = bAvailable / b.ingredients.length;
-    // Total time (prep + cook)
     const aTotalTime = a.prepTime + a.cookTime;
     const bTotalTime = b.prepTime + b.cookTime;
 
     if (sortValue === 'match') {
-      // Descending order: higher matching percentage first
       return bPercent - aPercent;
     } else if (sortValue === 'time') {
-      // Ascending order: lower total time first
       return aTotalTime - bTotalTime;
     }
     return 0;
   });
 
-  // Component to display each recipe as an attached drop-down tab
+  // Component to display each recipe as an expandable tab
   const RecipeTab = ({ recipe }: { recipe: Recipe }) => {
     const [isExpanded, setIsExpanded] = useState(false);
-    // Calculate the percentage of available ingredients
     const availableCount = recipe.ingredients.filter((ing) => ing.have).length;
     const totalCount = recipe.ingredients.length;
     const percentage = Math.round((availableCount / totalCount) * 100);
 
-    // Set a mild background tint based on percentage match
-    const bgColor =
-      percentage > 75
-        ? '#d4efdf' // light green
-        : percentage > 50
-        ? '#fcf3cf' // light yellow
-        : '#f5b7b1'; // light red
-
     return (
       <View style={styles.recipeContainer}>
         <TouchableOpacity onPress={() => setIsExpanded(!isExpanded)}>
-          <ThemedView style={[styles.recipeTab, { backgroundColor: bgColor }]}>
-            <ThemedText style={styles.recipeName}>{recipe.name}</ThemedText>
-            <ThemedText style={styles.recipeDescription}>
+          <ThemedView
+            style={[
+              styles.recipeTab,
+              { backgroundColor: Colors[currentColorScheme].cardBackground },
+            ]}
+          >
+            <ThemedText style={[styles.recipeName, { color: Colors[currentColorScheme].text }]}>
+              {recipe.name}
+            </ThemedText>
+            <ThemedText style={[styles.recipeDescription, { color: Colors[currentColorScheme].secondaryText }]}>
               {recipe.description}
             </ThemedText>
-            <ThemedText style={styles.recipePercentage}>
+            <ThemedText style={[styles.recipePercentage, { color: Colors[currentColorScheme].text }]}>
               {percentage}% matching ingredients
             </ThemedText>
-            <ThemedText style={styles.recipeTime}>
+            <ThemedText style={[styles.recipeTime, { color: Colors[currentColorScheme].text }]}>
               Prep: {recipe.prepTime}m, Cook: {recipe.cookTime}m
             </ThemedText>
           </ThemedView>
         </TouchableOpacity>
         {isExpanded && (
-          <ThemedView style={styles.recipeDetails}>
-            <ThemedText style={styles.detailTitle}>Ingredients:</ThemedText>
+          <ThemedView
+            style={[
+              styles.recipeDetails,
+              { backgroundColor: Colors[currentColorScheme].cardBackground },
+            ]}
+          >
+            <ThemedText style={[styles.detailTitle, { color: Colors[currentColorScheme].text }]}>
+              Ingredients:
+            </ThemedText>
             {recipe.ingredients.map((ing, index: number) => (
-              <ThemedText key={index.toString()} style={styles.ingredientText}>
+              <ThemedText
+                key={index.toString()}
+                style={[styles.ingredientText, { color: Colors[currentColorScheme].secondaryText }]}
+              >
                 {ing.name}: {ing.have ? 'Available' : 'Missing'}
               </ThemedText>
             ))}
-            <ThemedText style={styles.detailTitle}>Instructions:</ThemedText>
-            <ThemedText style={styles.instructionText}>
+            <ThemedText style={[styles.detailTitle, { color: Colors[currentColorScheme].text }]}>
+              Instructions:
+            </ThemedText>
+            <ThemedText style={[styles.instructionText, { color: Colors[currentColorScheme].secondaryText }]}>
               [Insert step-by-step cooking instructions here...]
             </ThemedText>
-            <ThemedText style={styles.detailTitle}>
+            <ThemedText style={[styles.detailTitle, { color: Colors[currentColorScheme].text }]}>
               Nutritional Values:
             </ThemedText>
-            <ThemedText style={styles.nutritionText}>
+            <ThemedText style={[styles.nutritionText, { color: Colors[currentColorScheme].secondaryText }]}>
               {recipe.nutritionalValues}
             </ThemedText>
           </ThemedView>
@@ -198,14 +200,17 @@ export default function HomeScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: Colors[currentColorScheme].background }]}>
       {/* Header: Search and Sort */}
       <View style={styles.headerContainer}>
         <View style={styles.searchContainer}>
           <TextInput
-            style={styles.searchInput}
+            style={[
+              styles.searchInput,
+              { color: Colors[currentColorScheme].text, borderColor: Colors[currentColorScheme].activeTabBorder },
+            ]}
             placeholder="Search recipes..."
-            placeholderTextColor="#777"
+            placeholderTextColor={Colors[currentColorScheme].secondaryText}
             value={searchQuery}
             onChangeText={setSearchQuery}
           />
@@ -214,7 +219,9 @@ export default function HomeScreen() {
           style={styles.sortButton}
           onPress={() => setSortOpen(!sortOpen)}
         >
-          <ThemedText style={styles.sortButtonLabel}>Sort</ThemedText>
+          <ThemedText style={[styles.sortButtonLabel, { color: Colors[currentColorScheme].text }]}>
+            Sort
+          </ThemedText>
           <SortIcon />
         </TouchableOpacity>
       </View>
@@ -246,7 +253,9 @@ export default function HomeScreen() {
               }}
               style={styles.sortDropdownItem}
             >
-              <ThemedText>{item.label}</ThemedText>
+              <ThemedText style={{ color: Colors[currentColorScheme].text }}>
+                {item.label}
+              </ThemedText>
             </TouchableOpacity>
           ))}
         </View>
@@ -261,10 +270,19 @@ export default function HomeScreen() {
   );
 }
 
+// Move the SortIcon component declaration here, after styles is defined.
+const SortIcon = () => (
+  <View style={styles.sortIconContainer}>
+    <View style={styles.sortLineTop} />
+    <View style={styles.sortLineMiddle} />
+    <View style={styles.sortLineMid} />
+    <View style={styles.sortLineBottom} />
+  </View>
+);
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000', // Dark background
     padding: 12,
   },
   headerContainer: {
@@ -277,11 +295,9 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     borderWidth: 1,
-    borderColor: '#444',
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: Platform.OS === 'ios' ? 12 : 8,
-    color: '#fff',
   },
   sortButton: {
     marginLeft: 8,
@@ -291,56 +307,54 @@ const styles = StyleSheet.create({
   },
   sortButtonLabel: {
     fontSize: 14,
-    color: '#fff',
-    marginRight: 4, // Small space between label and icon
+    marginRight: 4,
   },
-  // Custom sort icon styles with adjusted dimensions and left alignment
   sortIconContainer: {
-    alignItems: 'flex-start', // Align lines to the left
+    alignItems: 'flex-start',
   },
   sortLineTop: {
     width: 18,
     height: 2,
-    backgroundColor: '#fff',
+    backgroundColor: Colors.dark.text,
     marginBottom: 2,
   },
   sortLineMiddle: {
     width: 16,
     height: 2,
-    backgroundColor: '#fff',
+    backgroundColor: Colors.dark.text,
     marginBottom: 2,
-  },  
+  },
   sortLineMid: {
     width: 14,
     height: 2,
-    backgroundColor: '#fff',
+    backgroundColor: Colors.dark.text,
     marginBottom: 2,
   },
   sortLineBottom: {
     width: 12,
     height: 2,
-    backgroundColor: '#fff',
+    backgroundColor: Colors.dark.text,
   },
   dropdownContainer: {
     marginBottom: 12,
     zIndex: 1000,
   },
   dropdownStyle: {
-    backgroundColor: '#111',
-    borderColor: '#444',
+    borderColor: Colors.dark.activeTabBorder,
+    backgroundColor: Colors.dark.cardBackground,
   },
   dropdownListStyle: {
-    backgroundColor: '#222',
-    borderColor: '#444',
+    borderColor: Colors.dark.activeTabBorder,
+    backgroundColor: Colors.dark.cardBackground,
   },
   dropdownText: {
-    color: '#fff',
+    color: Colors.dark.text,
   },
   sortDropdown: {
     position: 'absolute',
-    top: 60, // Adjust based on your header height
+    top: 60,
     right: 12,
-    backgroundColor: '#111',
+    backgroundColor: Colors.dark.cardBackground,
     borderRadius: 8,
     padding: 8,
     zIndex: 1100,
@@ -358,49 +372,40 @@ const styles = StyleSheet.create({
     padding: 12,
   },
   recipeName: {
-    color: '#000',
     fontSize: 18,
     fontWeight: '600',
   },
   recipeDescription: {
-    color: '#333',
     fontSize: 14,
     marginVertical: 4,
   },
   recipePercentage: {
-    color: '#555',
     fontSize: 14,
   },
   recipeTime: {
-    color: '#555',
     fontSize: 14,
     marginTop: 4,
   },
   recipeDetails: {
-    backgroundColor: '#444',
     padding: 12,
     borderTopWidth: 1,
-    borderTopColor: '#555',
+    borderTopColor: Colors.dark.activeTabBorder,
   },
   detailTitle: {
-    color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
     marginBottom: 4,
   },
   ingredientText: {
-    color: '#ddd',
     fontSize: 14,
     marginLeft: 8,
     marginBottom: 2,
   },
   instructionText: {
-    color: '#ddd',
     fontSize: 14,
     marginTop: 8,
   },
   nutritionText: {
-    color: '#ddd',
     fontSize: 14,
     marginTop: 4,
   },
