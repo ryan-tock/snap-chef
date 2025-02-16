@@ -310,9 +310,9 @@ export default function IngredientsScreen() {
               <View style={styles.amountRow}>
                 <TouchableOpacity
                   onPress={() => updateAmount(item.id, false)}
-                  style={styles.button}
+                  style={[styles.button, { backgroundColor: Colors[currentColorScheme].tint }]}
                 >
-                  <MaterialIcons name="remove" size={24} color={Colors[currentColorScheme].tint} />
+                  <MaterialIcons name="remove" size={24} color="#fff" />
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -329,9 +329,9 @@ export default function IngredientsScreen() {
 
                 <TouchableOpacity
                   onPress={() => updateAmount(item.id, true)}
-                  style={styles.button}
+                  style={[styles.button, { backgroundColor: Colors[currentColorScheme].tint }]}
                 >
-                  <MaterialIcons name="add" size={24} color={Colors[currentColorScheme].tint} />
+                  <MaterialIcons name="add" size={24} color="#fff" />
                 </TouchableOpacity>
 
                 <TouchableOpacity
