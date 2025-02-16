@@ -37,7 +37,38 @@ function RecipesScreen(): React.JSX.Element {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   useEffect(() => {
     if (params.recipes) {
-      setRecipes(JSON.parse(params.recipes as string));
+      try {
+        // First parse the outer response
+        const outerParsed = JSON.parse(params.recipes as string);
+        
+        // Then parse the recipes string
+        let recipes;
+        try {
+          recipes = JSON.parse(outerParsed.recipes);
+        } catch (e) {
+          console.error('Inner parse error:', e);
+          recipes = outerParsed.recipes; // In case it's already parsed
+        }
+
+        // Transform the recipes to ensure all required fields exist
+        const processedRecipes = recipes.map((recipe: any) => ({
+          id: `recipe-${Date.now()}-${Math.random()}`,
+          name: recipe.name || 'Untitled Recipe',
+          category: recipe.category || 'Other',
+          description: recipe.description || 'No description available',
+          ingredients: Array.isArray(recipe.ingredients) ? recipe.ingredients : [],
+          instructions: Array.isArray(recipe.instructions) ? recipe.instructions : [],
+          prepTime: recipe.prepTime || 0,
+          cookTime: recipe.cookTime || 0,
+          nutritionalValues: recipe.nutritionalValues || 'Not available',
+          usesExpiringIngredients: false // We'll calculate this separately
+        }));
+
+        setRecipes(processedRecipes);
+        
+      } catch (e) {
+        console.error('Failed to parse recipes:', e);
+      }
     }
   }, [params.recipes]);
 
