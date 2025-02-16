@@ -10,11 +10,15 @@ import {
   StyleSheet,
   TouchableOpacity,
   SafeAreaView,
+  Dimensions,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { MaterialIcons } from '@expo/vector-icons';
 import { CameraView, CameraType, useCameraPermissions, Camera } from 'expo-camera';
 import { useRouter } from 'expo-router';
+
+const screenHeight = Dimensions.get('window').height;
+const cameraHeight = screenHeight * 0.7;
 
 interface Recipe {
   title: string;
@@ -422,6 +426,7 @@ const styles = StyleSheet.create({
   camera: {
     flex: 1,
     width: '100%',
+    height: cameraHeight,
   },
   captureButton: {
     backgroundColor: '#fff',
