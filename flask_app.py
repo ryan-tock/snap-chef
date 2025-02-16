@@ -90,6 +90,7 @@ def recipe_endpoint():
         
         print(f"Received ingredients: {ingredients}")
         
+        # Generate recipes using the ingredients
         recipes_response = generate_recipes(ingredients)
         print(f"Raw Gemini response: {recipes_response}")
 
@@ -130,7 +131,7 @@ def recipe_endpoint():
                 "id": f"error-{int(time.time())}",
                 "name": "Sample Recipe",
                 "category": "Dinner",
-                "description": "Failed to parse recipe data",
+                "description": "Failed to parse recipe data. Please try again.",
                 "ingredients": [{"name": ing["name"], "amount": str(ing["amount"]), "unit": "piece"} for ing in ingredients],
                 "instructions": ["Could not generate instructions"],
                 "prepTime": 0,
