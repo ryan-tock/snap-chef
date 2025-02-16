@@ -888,5 +888,9 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: '#555',
   },
+<<<<<<< HEAD
 >>>>>>> bf46308f3d91d345d560e387a0911791626d68a9
 });
+=======
+});
+>>>>>>> d9cb9103c9a1365766be8c153dfbe788b589d4c1

@@ -52,6 +52,13 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => <Entypo name="book" size={24} color={color} />,
         }}
       />
+      <Tabs.Screen
+        name="saved"
+        options={{
+          title: 'Saved Recipes',
+          tabBarIcon: ({ color }) => <Entypo name="save" size={24} color={color} />,
+        }}
+      />
     </Tabs>
   );
 }
