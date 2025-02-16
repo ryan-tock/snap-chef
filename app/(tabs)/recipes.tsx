@@ -33,32 +33,26 @@ interface Recipe {
 }
 
 function RecipesScreen(): React.JSX.Element {
-  // 1) Use theme toggle
+  // Use theme toggle
   const { isDark } = useThemeToggle();
   const currentColorScheme: 'light' | 'dark' = isDark ? 'dark' : 'light';
 
   const params = useLocalSearchParams();
 
-  // Load recipes from route parameters if provided; otherwise, use sample recipes.
+  // Populate recipes only from Gemini ingredients (via route parameters)
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   useEffect(() => {
     if (!params.recipes) {
-      setRecipes([]); // Reset to empty if no recipes provided
+      setRecipes([]);
       return;
     }
-
     try {
-      // First, ensure we're working with a string
-      const recipesString = typeof params.recipes === 'string' 
-        ? params.recipes 
-        : JSON.stringify(params.recipes);
-      
-      // Parse the outer response
+      const recipesString =
+        typeof params.recipes === 'string'
+          ? params.recipes
+          : JSON.stringify(params.recipes);
       const parsed = JSON.parse(recipesString);
-      
-      // Check if we have a recipes array in the response
       if (parsed.success && Array.isArray(parsed.recipes)) {
-        // Transform the recipes to match our interface
         const processedRecipes = parsed.recipes.map((recipe: any) => ({
           id: recipe.id,
           title: recipe.name,
@@ -66,10 +60,10 @@ function RecipesScreen(): React.JSX.Element {
           prepTime: recipe.prepTime,
           cookTime: recipe.cookTime,
           servings: recipe.servings,
-          ingredients: Array.isArray(recipe.ingredients) 
-            ? recipe.ingredients.map((ing: any) => 
-                typeof ing === 'string' 
-                  ? ing 
+          ingredients: Array.isArray(recipe.ingredients)
+            ? recipe.ingredients.map((ing: any) =>
+                typeof ing === 'string'
+                  ? ing
                   : `${ing.name} (${ing.amount} ${ing.unit})`
               )
             : [],
@@ -77,9 +71,8 @@ function RecipesScreen(): React.JSX.Element {
           dietary: recipe.dietary || [],
           requiredItems: recipe.requiredItems || [],
           expiringSoon: recipe.expiringSoon || false,
-          matchingPercentage: recipe.matchingPercentage || 0
+          matchingPercentage: recipe.matchingPercentage || 0,
         }));
-
         setRecipes(processedRecipes);
       } else {
         console.error('Invalid recipes data structure:', parsed);
@@ -97,7 +90,7 @@ function RecipesScreen(): React.JSX.Element {
   // --- Sort State ---
   const baseSortOptions = [
     { label: 'No Sort', value: 'none' },
-    { label: '% Matching Ingredients', value: 'matching' },
+    { label: '% Ingredients', value: 'matching' },
     { label: 'Time', value: 'time' },
     { label: 'Servings', value: 'servings' },
   ];
@@ -112,7 +105,9 @@ function RecipesScreen(): React.JSX.Element {
     }
   };
 
-  const handleSortChange = (value: 'none' | 'matching' | 'time' | 'servings' | null) => {
+  const handleSortChange = (
+    value: 'none' | 'matching' | 'time' | 'servings' | null
+  ) => {
     if (value === null) return;
     if (value === sortBy) {
       toggleSortDirection();
@@ -124,7 +119,7 @@ function RecipesScreen(): React.JSX.Element {
 
   const onSortValueChange = (callback: string | ((prev: string) => string)) => {
     const newValue = typeof callback === 'function' ? callback(sortBy) : callback;
-    handleSortChange(newValue as 'none' | 'matching' | 'time' | 'servings');
+    handleSortChange(newValue as "none" | "matching" | "time" | "servings");
   };
 
   // --- Filtering Dropdown (for title) ---
@@ -175,75 +170,26 @@ function RecipesScreen(): React.JSX.Element {
 
   // --- Bookmarking State ---
   const [savedRecipes, setSavedRecipes] = useState<Recipe[]>([]);
-
   const toggleBookmark = (recipe: Recipe) => {
     setSavedRecipes(prev => {
       const exists = prev.find(r => r.id === recipe.id);
-      if (exists) {
-        return prev.filter(r => r.id !== recipe.id);
-      } else {
-        return [...prev, recipe];
-      }
+      return exists ? prev.filter(r => r.id !== recipe.id) : [...prev, recipe];
     });
   };
 
-  // --- Option to toggle between All Recipes and Saved Recipes ---
+  // --- Toggle between All Recipes and Saved Recipes ---
   const [showSaved, setShowSaved] = useState(false);
 
- 
-
-  // Add some debug logging to help track the state
-  useEffect(() => {
-    console.log('Parsed recipes:', recipes);
-    console.log('Using sample recipes:', recipes.length === 0);
-  }, [recipes]);
-
   // --- Apply Filter (by title) ---
-  const filteredByFilter = filterBy === 'All' 
-    ? recipes 
-    : recipes.filter((recipe: Recipe) => recipe.title.toLowerCase().includes(filterBy.toLowerCase()));
-
-  // --- Apply Extra Filter Panel Options ---
-  let filteredByFilters = filteredByFilter;
-  if (dietaryFilter !== 'All') {
-    filteredByFilters = filteredByFilters.filter(recipe =>
-      recipe.dietary?.includes(dietaryFilter)
-    );
-  }
-  if (servingsFilter !== 'All') {
-    filteredByFilters = filteredByFilters.filter(recipe =>
-      recipe.servings === parseInt(servingsFilter)
-    );
-  }
-  if (requiredFilter !== 'All') {
-    filteredByFilters = filteredByFilters.filter(recipe =>
-      recipe.requiredItems?.includes(requiredFilter)
-    );
-  }
-
-  // --- Apply Multi-select Filter Options ---
-  if (selectedFilters.length > 0) {
-    if (selectedFilters.includes('Vegan')) {
-      filteredByFilters = filteredByFilters.filter(recipe => recipe.dietary?.includes('Vegan'));
-    }
-    if (selectedFilters.includes('Vegetarian')) {
-      filteredByFilters = filteredByFilters.filter(recipe => recipe.dietary?.includes('Vegetarian'));
-    }
-    if (selectedFilters.includes('Gluten-Free')) {
-      filteredByFilters = filteredByFilters.filter(recipe => recipe.dietary?.includes('Gluten-Free'));
-    }
-    if (selectedFilters.includes('ExpiringSoon')) {
-      filteredByFilters = filteredByFilters.filter(recipe => recipe.expiringSoon);
-    }
-  }
-
-  // --- Apply Search ---
-  const filteredRecipes = filteredByFilters.filter(recipe => 
+  const filteredRecipes = recipes.filter(recipe =>
     recipe.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
     recipe.description.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // --- Apply Sorting based on sortBy and sortDirection ---
+  // --- Apply Sorting ---
+  // If no sort option is chosen, leave the list unsorted.
+  // For 'matching', sort descending (highest first).
+  // For 'time', sort ascending (lowest total time first).
   let sortedRecipes = [...filteredRecipes];
   if (sortBy === 'matching') {
     sortedRecipes.sort((a, b) =>
@@ -265,7 +211,7 @@ function RecipesScreen(): React.JSX.Element {
     );
   }
 
-  // Recipe Card (without image).
+  // Recipe Card Component
   const RecipeCard = ({ recipe }: { recipe: Recipe }) => {
     const [expanded, setExpanded] = useState(false);
     const isSaved = savedRecipes.some(r => r.id === recipe.id);
@@ -275,92 +221,64 @@ function RecipesScreen(): React.JSX.Element {
         <ThemedView
           style={[
             styles.recipeCard,
-            // dynamic card background
             { backgroundColor: Colors[currentColorScheme].cardBackground },
           ]}
         >
           <View style={styles.cardHeader}>
             <ThemedText
-              style={[
-                styles.recipeTitle,
-                { color: Colors[currentColorScheme].text },
-              ]}
+              style={[styles.recipeTitle, { color: Colors[currentColorScheme].text }]}
             >
               {recipe.title}
             </ThemedText>
             <TouchableOpacity onPress={() => toggleBookmark(recipe)}>
-              <MaterialIcons 
-                name={isSaved ? 'bookmark' : 'bookmark-border'} 
-                size={24} 
-                color={Colors[currentColorScheme].text} 
+              <MaterialIcons
+                name={isSaved ? 'bookmark' : 'bookmark-border'}
+                size={24}
+                color={Colors[currentColorScheme].text}
               />
             </TouchableOpacity>
           </View>
           <ThemedText
-            style={[
-              styles.recipeDescription,
-              { color: Colors[currentColorScheme].secondaryText },
-            ]}
+            style={[styles.recipeDescription, { color: Colors[currentColorScheme].secondaryText }]}
           >
             {recipe.description}
           </ThemedText>
           <ThemedText
-            style={[
-              styles.prepTime,
-              { color: Colors[currentColorScheme].secondaryText },
-            ]}
+            style={[styles.prepTime, { color: Colors[currentColorScheme].secondaryText }]}
           >
             Prep Time: {recipe.prepTime}m | Total Time: {recipe.prepTime + recipe.cookTime}m
           </ThemedText>
           <ThemedText
-            style={[
-              styles.extraInfo,
-              { color: Colors[currentColorScheme].secondaryText },
-            ]}
+            style={[styles.extraInfo, { color: Colors[currentColorScheme].secondaryText }]}
           >
             % Matching: {recipe.matchingPercentage ? recipe.matchingPercentage + '%' : '0%'} | Servings: {recipe.servings}
           </ThemedText>
           {expanded && (
             <ThemedView
-              style={[
-                styles.subtab,
-                { backgroundColor: Colors[currentColorScheme].background },
-              ]}
+              style={[styles.subtab, { backgroundColor: Colors[currentColorScheme].background }]}
             >
               <ThemedText
-                style={[
-                  styles.sectionTitle,
-                  { color: Colors[currentColorScheme].text },
-                ]}
+                style={[styles.sectionTitle, { color: Colors[currentColorScheme].text }]}
               >
                 Ingredients:
               </ThemedText>
               {recipe.ingredients.map((ing, i) => (
                 <ThemedText
                   key={i}
-                  style={[
-                    styles.listItem,
-                    { color: Colors[currentColorScheme].secondaryText },
-                  ]}
+                  style={[styles.listItem, { color: Colors[currentColorScheme].secondaryText }]}
                 >
                   • {ing}
                 </ThemedText>
               ))}
               <ThemedText
-                style={[
-                  styles.sectionTitle,
-                  { color: Colors[currentColorScheme].text },
-                ]}
+                style={[styles.sectionTitle, { color: Colors[currentColorScheme].text }]}
               >
                 Instructions:
               </ThemedText>
               {recipe.instructions.map((step, i) => (
                 <ThemedText
                   key={i}
-                  style={[
-                    styles.listItem,
-                    { color: Colors[currentColorScheme].secondaryText },
-                  ]}
+                  style={[styles.listItem, { color: Colors[currentColorScheme].secondaryText }]}
                 >
                   {i + 1}. {step}
                 </ThemedText>
@@ -373,48 +291,85 @@ function RecipesScreen(): React.JSX.Element {
   };
 
   return (
-    <SafeAreaView
-      style={[
-        styles.container,
-        { backgroundColor: Colors[currentColorScheme].background },
-      ]}
-    >
+    <SafeAreaView style={[styles.container, { backgroundColor: Colors[currentColorScheme].background }]}>
       <View style={styles.content}>
-        {/* Header with Filter and Sort Section */}
+        {/* Header with Filter and Sort Top Tab Buttons */}
         <View style={styles.headerContainer}>
-          {/* Filter Button */}
           <TouchableOpacity 
             style={styles.filterButton}
             onPress={() => setOpenFilter(!openFilter)}
           >
-            <MaterialIcons name="filter-list" size={24} color={Colors[currentColorScheme].tint} />
-            <ThemedText style={[styles.filterText, { color: Colors[currentColorScheme].text }]}>
-              Filter: {selectedFilters.length > 0 
-                ? selectedFilters.join(', ') 
-                : 'None'}
-            </ThemedText>
+            <MaterialIcons name="filter-list" size={24} color="#1B5E20" />
+            <ThemedText style={styles.sortByText}>Filter</ThemedText>
+            <MaterialIcons name="arrow-drop-down" size={24} color="#1B5E20" />
           </TouchableOpacity>
-
-          {/* Sort Section - Move to right */}
           <View style={styles.sortHeader}>
-            <ThemedText style={[styles.sortByStatic, { color: Colors[currentColorScheme].text }]}>
-              Sort:
-            </ThemedText>
-            <TouchableOpacity
-              style={[styles.sortByButton, { backgroundColor: Colors[currentColorScheme].cardBackground }]}
+            <TouchableOpacity onPress={toggleSortDirection} style={styles.sortIconButton}>
+              <MaterialIcons 
+                name={sortDirection === 'asc' ? 'arrow-upward' : 'arrow-downward'} 
+                size={20} 
+                color="#1B5E20" 
+              />
+            </TouchableOpacity>
+            <ThemedText style={styles.sortByStatic}>Sort By:</ThemedText>
+            <TouchableOpacity 
+              style={styles.sortByButton}
               onPress={() => setOpenSort(!openSort)}
             >
-              <ThemedText style={[styles.sortByText, { color: Colors[currentColorScheme].text }]}>
-                {sortBy === 'none' ? 'Select' : sortBy}
+              <ThemedText style={styles.sortByText}>
+                {sortBy !== 'none'
+                  ? sortBy === 'matching'
+                    ? '% Matching Ingredients'
+                    : sortBy === 'time'
+                    ? 'Time'
+                    : sortBy === 'servings'
+                    ? 'Servings'
+                    : ''
+                  : 'Select'}
               </ThemedText>
-              <MaterialIcons 
-                name="arrow-drop-down" 
-                size={24} 
-                color={Colors[currentColorScheme].text} 
-              />
             </TouchableOpacity>
           </View>
         </View>
+
+        {/* Render Dropdowns Right Below Header */}
+        {openFilter && (
+          <DropDownPicker<string>
+            open={openFilter}
+            value={selectedFilters}
+            items={filterOptions}
+            setOpen={setOpenFilter}
+            setValue={setSelectedFilters}
+            placeholder="Select filter options"
+            multiple={true}
+            style={styles.dropdownStyle}
+            containerStyle={styles.dropdownContainer}
+            dropDownContainerStyle={styles.dropdownListStyle}
+            textStyle={styles.dropdownText}
+            zIndex={2200}
+            zIndexInverse={2200}
+          />
+        )}
+        {openSort && (
+          <DropDownPicker<string>
+            open={openSort}
+            value={sortBy}
+            items={sortItems}
+            setOpen={setOpenSort}
+            setValue={(callback) => {
+              const newValue = typeof callback === 'function' ? callback(sortBy) : callback;
+              handleSortChange(newValue);
+            }}
+            setItems={setSortItems}
+            placeholder="Sort by Option"
+            multiple={false}
+            style={styles.dropdownStyle}
+            containerStyle={styles.dropdownContainer}
+            dropDownContainerStyle={styles.dropdownListStyle}
+            textStyle={styles.dropdownText}
+            zIndex={2000}
+            zIndexInverse={2000}
+          />
+        )}
 
         {/* Search Bar */}
         <View style={styles.searchContainer}>
@@ -434,19 +389,7 @@ function RecipesScreen(): React.JSX.Element {
           />
         </View>
 
-        {/* Saved Recipes Tab (always visible, below search bar) */}
-        <TouchableOpacity
-          style={[
-            styles.savedTab,
-            { backgroundColor: Colors[currentColorScheme].accentButton },
-          ]}
-          onPress={() => setShowSaved(true)}
-        >
-          <MaterialIcons name="bookmark" size={24} color="#fff" />
-          <ThemedText style={styles.savedTabText}>Saved Recipes</ThemedText>
-        </TouchableOpacity>
-
-        {/* Render content based on selected tab */}
+        {/* Render Recipes List */}
         {showSaved ? (
           savedRecipes.length > 0 ? (
             <FlatList
@@ -469,78 +412,14 @@ function RecipesScreen(): React.JSX.Element {
           />
         )}
 
-        {/* Filter Dropdown */}
-        {openFilter && (
-          <View style={styles.dropdownContainer}>
-            <DropDownPicker<string>
-              open={openFilter}
-              value={selectedFilters}
-              items={filterOptions}
-              setOpen={setOpenFilter}
-              setValue={(val) => {
-                setSelectedFilters(val);
-                setOpenFilter(false);  // Close dropdown after selection
-              }}
-              placeholder="Select filter options"
-              multiple={true}
-              style={[
-                styles.dropdownStyle,
-                {
-                  backgroundColor: Colors[currentColorScheme].cardBackground,
-                  borderColor: Colors[currentColorScheme].activeTabBorder,
-                },
-              ]}
-              containerStyle={styles.dropdownContainer}
-              dropDownContainerStyle={[
-                styles.dropdownListStyle,
-                {
-                  backgroundColor: Colors[currentColorScheme].cardBackground,
-                  borderColor: Colors[currentColorScheme].activeTabBorder,
-                },
-              ]}
-              textStyle={[styles.dropdownText, { color: Colors[currentColorScheme].text }]}
-              zIndex={2200}
-              zIndexInverse={1000}
-            />
-          </View>
-        )}
-
-        {/* Sort Dropdown */}
-        {openSort && (
-          <View style={styles.dropdownContainer}>
-            <DropDownPicker
-              open={openSort}
-              value={sortBy}
-              items={sortItems}
-              setOpen={setOpenSort}
-              setValue={(callback) => {
-                const newValue = typeof callback === 'function' ? callback(sortBy) : callback;
-                handleSortChange(newValue as 'none' | 'matching' | 'time' | 'servings');
-              }}
-              setItems={setSortItems}
-              placeholder="Sort by Option"
-              multiple={false}
-              style={[
-                styles.dropdownStyle,
-                {
-                  backgroundColor: Colors[currentColorScheme].cardBackground,
-                  borderColor: Colors[currentColorScheme].activeTabBorder,
-                },
-              ]}
-              containerStyle={styles.dropdownContainer}
-              dropDownContainerStyle={[
-                styles.dropdownListStyle,
-                {
-                  backgroundColor: Colors[currentColorScheme].cardBackground,
-                  borderColor: Colors[currentColorScheme].activeTabBorder,
-                },
-              ]}
-              textStyle={[styles.dropdownText, { color: Colors[currentColorScheme].text }]}
-              zIndex={2000}
-              zIndexInverse={1000}
-            />
-          </View>
-        )}
+        {/* Saved Recipes Tab */}
+        <TouchableOpacity
+          style={[styles.savedTab, { backgroundColor: Colors[currentColorScheme].accentButton }]}
+          onPress={() => setShowSaved(true)}
+        >
+          <MaterialIcons name="bookmark" size={24} color="#fff" />
+          <ThemedText style={styles.savedTabText}>Saved Recipes</ThemedText>
+        </TouchableOpacity>
       </View>
     </SafeAreaView>
   );
@@ -551,22 +430,21 @@ export default RecipesScreen;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    // We'll apply dynamic background inline
   },
   content: {
     flex: 1,
     padding: 16,
   },
-  headerContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 12,
+  headerContainer: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    marginBottom: 12, 
     zIndex: 3000,
   },
-  filterButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 8,
+  filterButton: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    padding: 8, 
     maxWidth: '60%',
   },
   filterText: {
@@ -581,23 +459,27 @@ const styles = StyleSheet.create({
   },
   sortByStatic: {
     fontSize: 16,
-    marginRight: 4,
+    color: '#1B5E20',
   },
   sortByButton: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 8,
     borderRadius: 8,
-    marginLeft: 8,
   },
   sortByText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: 'bold',
+    color: '#1B5E20',
+    marginRight: 4,
+  },
+  sortIconButton: {
     marginRight: 4,
   },
   savedTab: {
     flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: '#2E7D32',
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 4,
@@ -609,46 +491,35 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginLeft: 6,
   },
-  dropdownContainer: {
-    position: 'absolute',
-    top: 50,
-    left: 0,
-    right: 0,
-    zIndex: 2000,
-    paddingHorizontal: 16,
+  dropdownContainer: { 
+    marginBottom: 12, 
   },
-  dropdownStyle: {
-    borderWidth: 1,
-    borderRadius: 8,
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
+  dropdownStyle: { 
+    backgroundColor: '#f5f5f5', 
+    borderColor: '#ccc' 
   },
-  dropdownListStyle: {
-    borderWidth: 1,
-    borderRadius: 8,
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
+  dropdownListStyle: { 
+    backgroundColor: '#e8e8e8', 
+    borderColor: '#ccc' 
   },
-  dropdownText: {
-    fontSize: 16,
+  dropdownText: { 
+    fontSize: 16, 
+    color: '#000' 
   },
-  searchContainer: {
-    marginBottom: 12,
+  searchContainer: { 
+    marginBottom: 12, 
   },
   searchInput: {
     borderWidth: 1,
+    borderColor: '#ccc',
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: Platform.OS === 'ios' ? 12 : 8,
     fontSize: 16,
+    color: '#000',
   },
   recipeCard: {
+    backgroundColor: '#f8f8f8',
     borderRadius: 8,
     padding: 12,
     marginBottom: 12,
@@ -661,24 +532,28 @@ const styles = StyleSheet.create({
   recipeTitle: {
     fontSize: 18,
     fontWeight: 'bold',
+    color: '#1B5E20',
     marginBottom: 4,
   },
-  recipeDescription: {
+  recipeDescription: { 
     fontSize: 16,
+    color: '#333',
     marginBottom: 4,
   },
   prepTime: {
     fontSize: 14,
-    marginTop: 4,
+    color: '#555',
   },
   extraInfo: {
     fontSize: 14,
+    color: '#555',
     marginTop: 4,
   },
   subtab: {
     marginTop: 8,
+    backgroundColor: '#f0f0f0',
     borderTopWidth: 1,
-    borderTopColor: '#ccc', // can also theme this if you want
+    borderTopColor: '#ccc',
     paddingTop: 8,
     padding: 8,
     borderRadius: 4,
@@ -686,11 +561,13 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontWeight: '600',
+    color: '#2E7D32',
     marginTop: 8,
     marginBottom: 4,
   },
   listItem: {
     fontSize: 15,
+    color: '#333',
     marginBottom: 4,
     paddingLeft: 8,
   },
@@ -700,5 +577,17 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 18,
+    color: '#555',
+  },
+  sortContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  sortLabel: {
+    fontSize: 16,
+  },
+  sortChoice: {
+    fontSize: 16,
   },
 });
