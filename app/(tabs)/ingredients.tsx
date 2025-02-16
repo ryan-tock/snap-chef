@@ -1,4 +1,4 @@
-import { StyleSheet, SafeAreaView, ScrollView, View, TouchableOpacity, TextInput, Platform } from 'react-native';
+import { StyleSheet, SafeAreaView, View, TouchableOpacity, TextInput, Platform, FlatList } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useState, useEffect } from 'react';
@@ -97,13 +97,13 @@ export default function IngredientsScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView style={styles.scrollView}>
+      <View style={styles.content}>
         {/* Title */}
         <ThemedView style={styles.titleContainer}>
           <ThemedText type="title">Ingredients</ThemedText>
         </ThemedView>
 
-        {/* ---------- Search Bar ---------- */}
+        {/* Search Bar */}
         <View style={styles.searchContainer}>
           <TextInput
             style={styles.searchInput}
@@ -114,7 +114,7 @@ export default function IngredientsScreen() {
           />
         </View>
 
-        {/* ---------- First Drop-Down: Filter by Unit ---------- */}
+        {/* Dropdowns */}
         <DropDownPicker
           open={openUnit}
           value={filterUnit}
@@ -131,7 +131,6 @@ export default function IngredientsScreen() {
           zIndexInverse={1000}
         />
 
-        {/* ---------- Second Drop-Down: Sort by Amount ---------- */}
         <DropDownPicker
           open={openSort}
           value={sortBy}
@@ -148,44 +147,48 @@ export default function IngredientsScreen() {
           zIndexInverse={2000}
         />
 
-        {/* ---------- Render Ingredients ---------- */}
-        {finalIngredients.map((ingredient, index) => (
-          <View key={index} style={styles.ingredientContainer}>
-            <View style={styles.labelContainer}>
-              <ThemedText style={styles.ingredientName}>{ingredient.name}</ThemedText>
-              <ThemedText style={styles.amount}>
-                {ingredient.amount}{' '}
-                {ingredient.unit || 'pieces'}
-              </ThemedText>
-            </View>
+        {/* Ingredients List */}
+        <FlatList
+          data={finalIngredients}
+          keyExtractor={(_, index) => index.toString()}
+          renderItem={({ item, index }) => (
+            <View style={styles.ingredientContainer}>
+              <View style={styles.labelContainer}>
+                <ThemedText style={styles.ingredientName}>{item.name}</ThemedText>
+                <ThemedText style={styles.amount}>
+                  {item.amount}{' '}
+                  {item.unit || 'pieces'}
+                </ThemedText>
+              </View>
 
-            <View style={styles.barContainer}>
-              <View
-                style={[
-                  styles.bar,
-                  { width: `${getBarWidth(ingredient.amount)}%` },
-                ]}
-              />
-            </View>
+              <View style={styles.barContainer}>
+                <View
+                  style={[
+                    styles.bar,
+                    { width: `${getBarWidth(item.amount)}%` },
+                  ]}
+                />
+              </View>
 
-            <View style={styles.buttonsContainer}>
-              <TouchableOpacity
-                onPress={() => updateAmount(index, false)}
-                style={styles.button}
-              >
-                <MaterialIcons name="remove" size={24} color="#2E7D32" />
-              </TouchableOpacity>
+              <View style={styles.buttonsContainer}>
+                <TouchableOpacity
+                  onPress={() => updateAmount(index, false)}
+                  style={styles.button}
+                >
+                  <MaterialIcons name="remove" size={24} color="#2E7D32" />
+                </TouchableOpacity>
 
-              <TouchableOpacity
-                onPress={() => updateAmount(index, true)}
-                style={styles.button}
-              >
-                <MaterialIcons name="add" size={24} color="#2E7D32" />
-              </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => updateAmount(index, true)}
+                  style={styles.button}
+                >
+                  <MaterialIcons name="add" size={24} color="#2E7D32" />
+                </TouchableOpacity>
+              </View>
             </View>
-          </View>
-        ))}
-      </ScrollView>
+          )}
+        />
+      </View>
     </SafeAreaView>
   );
 }
@@ -197,7 +200,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  scrollView: {
+  content: {
     flex: 1,
     padding: 16,
   },
