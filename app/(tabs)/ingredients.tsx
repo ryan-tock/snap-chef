@@ -122,7 +122,7 @@ export default function IngredientsScreen() {
               <View style={styles.labelContainer}>
                 <ThemedText style={styles.ingredientName}>{item.name}</ThemedText>
                 <ThemedText style={styles.amount}>
-                  {item.amount} {item.unit || 'pieces'}
+                  {item.amount} {item.unit}
                 </ThemedText>
               </View>
 
@@ -130,7 +130,7 @@ export default function IngredientsScreen() {
                 <View
                   style={[
                     styles.bar,
-                    { width: `${getBarWidth(item.amount)}%` },
+                    { width: `${getBarWidth(item.amount)}%` }
                   ]}
                 />
               </View>
@@ -223,10 +223,12 @@ const styles = StyleSheet.create({
   ingredientName: {
     fontSize: 16,
     fontWeight: '600',
+    flex: 1,  // Take up available space
   },
   amount: {
     fontSize: 16,
     color: '#666',
+    marginLeft: 8,
   },
   barContainer: {
     height: 20,
