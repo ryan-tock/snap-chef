@@ -20,7 +20,7 @@ Install Node.js by running
 ###### Step 5
 Navigate to the source directory with
 `cd snap-chef`
-###### step 6
+###### Step 6
 Install dependencies with
 `npm i`
 ###### Step 7
