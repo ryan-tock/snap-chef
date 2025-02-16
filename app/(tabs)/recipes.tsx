@@ -33,6 +33,10 @@ interface Recipe {
 }
 
 function RecipesScreen(): React.JSX.Element {
+  // 1) Use theme toggle
+  const { isDark } = useThemeToggle();
+  const currentColorScheme: 'light' | 'dark' = isDark ? 'dark' : 'light';
+
   const params = useLocalSearchParams();
 
   // Load recipes from route parameters if provided; otherwise, use sample recipes.
@@ -64,7 +68,7 @@ function RecipesScreen(): React.JSX.Element {
     }
   };
 
-  const handleSortChange = (value: "none" | "matching" | "time" | "servings" | null) => {
+  const handleSortChange = (value: 'none' | 'matching' | 'time' | 'servings' | null) => {
     if (value === null) return;
     if (value === sortBy) {
       toggleSortDirection();
@@ -76,7 +80,7 @@ function RecipesScreen(): React.JSX.Element {
 
   const onSortValueChange = (callback: string | ((prev: string) => string)) => {
     const newValue = typeof callback === 'function' ? callback(sortBy) : callback;
-    handleSortChange(newValue as "none" | "matching" | "time" | "servings");
+    handleSortChange(newValue as 'none' | 'matching' | 'time' | 'servings');
   };
 
   // --- Filtering Dropdown (for title) ---
@@ -155,7 +159,7 @@ function RecipesScreen(): React.JSX.Element {
       instructions: [
         'Boil pasta until al dente.',
         'Sauté vegetables with garlic and olive oil.',
-        'Mix pasta with veggies, season with salt and pepper.'
+        'Mix pasta with veggies, season with salt and pepper.',
       ],
       dietary: ['Vegetarian'],
       requiredItems: ['Pasta', 'Tomatoes'],
@@ -173,7 +177,7 @@ function RecipesScreen(): React.JSX.Element {
       instructions: [
         'Mix flour, eggs, and milk until smooth.',
         'Cook on a griddle until bubbles form, flip and cook the other side.',
-        'Serve with maple syrup.'
+        'Serve with maple syrup.',
       ],
       dietary: [],
       requiredItems: ['Eggs', 'Milk'],
@@ -191,7 +195,7 @@ function RecipesScreen(): React.JSX.Element {
       instructions: [
         'Chop all vegetables.',
         'Toss with olive oil and lemon juice.',
-        'Season with salt and pepper.'
+        'Season with salt and pepper.',
       ],
       dietary: ['Vegan', 'Gluten-Free'],
       requiredItems: ['Lettuce', 'Tomatoes'],
@@ -205,7 +209,9 @@ function RecipesScreen(): React.JSX.Element {
   // --- Apply Filter (by title) ---
   const filteredByFilter = filterBy === 'All' 
     ? allRecipes 
-    : allRecipes.filter(recipe => recipe.title.toLowerCase().includes(filterBy.toLowerCase()));
+    : allRecipes.filter(recipe => 
+        recipe.title.toLowerCase().includes(filterBy.toLowerCase())
+      );
 
   // --- Apply Extra Filter Panel Options ---
   let filteredByFilters = filteredByFilter;
@@ -276,33 +282,96 @@ function RecipesScreen(): React.JSX.Element {
 
     return (
       <TouchableOpacity onPress={() => setExpanded(!expanded)}>
-        <ThemedView style={styles.recipeCard}>
+        <ThemedView
+          style={[
+            styles.recipeCard,
+            // dynamic card background
+            { backgroundColor: Colors[currentColorScheme].cardBackground },
+          ]}
+        >
           <View style={styles.cardHeader}>
-            <ThemedText style={styles.recipeTitle}>{recipe.title}</ThemedText>
+            <ThemedText
+              style={[
+                styles.recipeTitle,
+                { color: Colors[currentColorScheme].text },
+              ]}
+            >
+              {recipe.title}
+            </ThemedText>
             <TouchableOpacity onPress={() => toggleBookmark(recipe)}>
               <MaterialIcons 
-                name={isSaved ? "bookmark" : "bookmark-border"} 
+                name={isSaved ? 'bookmark' : 'bookmark-border'} 
                 size={24} 
-                color="#1B5E20" 
+                color={Colors[currentColorScheme].text} 
               />
             </TouchableOpacity>
           </View>
-          <ThemedText style={styles.recipeDescription}>{recipe.description}</ThemedText>
-          <ThemedText style={styles.prepTime}>
+          <ThemedText
+            style={[
+              styles.recipeDescription,
+              { color: Colors[currentColorScheme].secondaryText },
+            ]}
+          >
+            {recipe.description}
+          </ThemedText>
+          <ThemedText
+            style={[
+              styles.prepTime,
+              { color: Colors[currentColorScheme].secondaryText },
+            ]}
+          >
             Prep Time: {recipe.prepTime}m | Total Time: {recipe.prepTime + recipe.cookTime}m
           </ThemedText>
-          <ThemedText style={styles.extraInfo}>
+          <ThemedText
+            style={[
+              styles.extraInfo,
+              { color: Colors[currentColorScheme].secondaryText },
+            ]}
+          >
             % Matching: {recipe.matchingPercentage ? recipe.matchingPercentage + '%' : '0%'} | Servings: {recipe.servings}
           </ThemedText>
           {expanded && (
-            <ThemedView style={styles.subtab}>
-              <ThemedText style={styles.sectionTitle}>Ingredients:</ThemedText>
+            <ThemedView
+              style={[
+                styles.subtab,
+                { backgroundColor: Colors[currentColorScheme].background },
+              ]}
+            >
+              <ThemedText
+                style={[
+                  styles.sectionTitle,
+                  { color: Colors[currentColorScheme].text },
+                ]}
+              >
+                Ingredients:
+              </ThemedText>
               {recipe.ingredients.map((ing, i) => (
-                <ThemedText key={i} style={styles.listItem}>• {ing}</ThemedText>
+                <ThemedText
+                  key={i}
+                  style={[
+                    styles.listItem,
+                    { color: Colors[currentColorScheme].secondaryText },
+                  ]}
+                >
+                  • {ing}
+                </ThemedText>
               ))}
-              <ThemedText style={styles.sectionTitle}>Instructions:</ThemedText>
+              <ThemedText
+                style={[
+                  styles.sectionTitle,
+                  { color: Colors[currentColorScheme].text },
+                ]}
+              >
+                Instructions:
+              </ThemedText>
               {recipe.instructions.map((step, i) => (
-                <ThemedText key={i} style={styles.listItem}>
+                <ThemedText
+                  key={i}
+                  style={[
+                    styles.listItem,
+                    { color: Colors[currentColorScheme].secondaryText },
+                  ]}
+                >
                   {i + 1}. {step}
                 </ThemedText>
               ))}
@@ -314,7 +383,12 @@ function RecipesScreen(): React.JSX.Element {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView
+      style={[
+        styles.container,
+        { backgroundColor: Colors[currentColorScheme].background },
+      ]}
+    >
       <View style={styles.content}>
         {/* Header with Filter and Sort Section */}
         <View style={styles.headerContainer}>
@@ -322,24 +396,28 @@ function RecipesScreen(): React.JSX.Element {
             style={styles.filterButton}
             onPress={() => setOpenFilter(!openFilter)}
           >
-            <MaterialIcons name="filter-list" size={24} color="#1B5E20" />
-            <ThemedText style={styles.sortByText}>Filter</ThemedText>
-            <MaterialIcons name="arrow-drop-down" size={24} color="#1B5E20" />
+            <MaterialIcons name="filter-list" size={24} color={Colors[currentColorScheme].text} />
+            <ThemedText style={[styles.sortByText, { color: Colors[currentColorScheme].text }]}>
+              Filter
+            </ThemedText>
+            <MaterialIcons name="arrow-drop-down" size={24} color={Colors[currentColorScheme].text} />
           </TouchableOpacity>
           <View style={styles.sortHeader}>
             <TouchableOpacity onPress={toggleSortDirection} style={styles.sortIconButton}>
-              <MaterialIcons 
-                name={sortDirection === 'asc' ? 'arrow-upward' : 'arrow-downward'} 
-                size={20} 
-                color="#1B5E20" 
+              <MaterialIcons
+                name={sortDirection === 'asc' ? 'arrow-upward' : 'arrow-downward'}
+                size={20}
+                color={Colors[currentColorScheme].text}
               />
             </TouchableOpacity>
-            <ThemedText style={styles.sortByStatic}>Sort By: </ThemedText>
-            <TouchableOpacity 
+            <ThemedText style={[styles.sortByStatic, { color: Colors[currentColorScheme].text }]}>
+              Sort By:
+            </ThemedText>
+            <TouchableOpacity
               style={styles.sortByButton}
               onPress={() => setOpenSort(!openSort)}
             >
-              <ThemedText style={styles.sortByText}>
+              <ThemedText style={[styles.sortByText, { color: Colors[currentColorScheme].text }]}>
                 {sortBy !== 'none'
                   ? sortBy === 'matching'
                     ? '% Matching Ingredients'
@@ -359,7 +437,11 @@ function RecipesScreen(): React.JSX.Element {
           <TextInput
             style={[
               styles.searchInput,
-              { color: Colors[currentColorScheme].text, borderColor: Colors[currentColorScheme].activeTabBorder },
+              {
+                color: Colors[currentColorScheme].text,
+                borderColor: Colors[currentColorScheme].activeTabBorder,
+                backgroundColor: Colors[currentColorScheme].cardBackground,
+              },
             ]}
             placeholder="Search recipes..."
             placeholderTextColor={Colors[currentColorScheme].secondaryText}
@@ -369,8 +451,11 @@ function RecipesScreen(): React.JSX.Element {
         </View>
 
         {/* Saved Recipes Tab (always visible, below search bar) */}
-        <TouchableOpacity 
-          style={styles.savedTab}
+        <TouchableOpacity
+          style={[
+            styles.savedTab,
+            { backgroundColor: Colors[currentColorScheme].accentButton },
+          ]}
           onPress={() => setShowSaved(true)}
         >
           <MaterialIcons name="bookmark" size={24} color="#fff" />
@@ -387,7 +472,9 @@ function RecipesScreen(): React.JSX.Element {
             />
           ) : (
             <View style={styles.emptyContainer}>
-              <ThemedText style={styles.emptyText}>No saved recipes</ThemedText>
+              <ThemedText style={[styles.emptyText, { color: Colors[currentColorScheme].secondaryText }]}>
+                No saved recipes
+              </ThemedText>
             </View>
           )
         ) : (
@@ -408,10 +495,22 @@ function RecipesScreen(): React.JSX.Element {
             setValue={setSelectedFilters}
             placeholder="Select filter options"
             multiple={true}
-            style={styles.dropdownStyle}
+            style={[
+              styles.dropdownStyle,
+              {
+                backgroundColor: Colors[currentColorScheme].cardBackground,
+                borderColor: Colors[currentColorScheme].activeTabBorder,
+              },
+            ]}
             containerStyle={styles.dropdownContainer}
-            dropDownContainerStyle={styles.dropdownListStyle}
-            textStyle={styles.dropdownText}
+            dropDownContainerStyle={[
+              styles.dropdownListStyle,
+              {
+                backgroundColor: Colors[currentColorScheme].cardBackground,
+                borderColor: Colors[currentColorScheme].activeTabBorder,
+              },
+            ]}
+            textStyle={[styles.dropdownText, { color: Colors[currentColorScheme].text }]}
             zIndex={2200}
             zIndexInverse={2200}
           />
@@ -426,15 +525,27 @@ function RecipesScreen(): React.JSX.Element {
             setOpen={setOpenSort}
             setValue={(callback) => {
               const newValue = typeof callback === 'function' ? callback(sortBy) : callback;
-              handleSortChange(newValue);
+              handleSortChange(newValue as 'none' | 'matching' | 'time' | 'servings');
             }}
             setItems={setSortItems}
             placeholder="Sort by Option"
             multiple={false}
-            style={styles.dropdownStyle}
+            style={[
+              styles.dropdownStyle,
+              {
+                backgroundColor: Colors[currentColorScheme].cardBackground,
+                borderColor: Colors[currentColorScheme].activeTabBorder,
+              },
+            ]}
             containerStyle={styles.dropdownContainer}
-            dropDownContainerStyle={styles.dropdownListStyle}
-            textStyle={styles.dropdownText}
+            dropDownContainerStyle={[
+              styles.dropdownListStyle,
+              {
+                backgroundColor: Colors[currentColorScheme].cardBackground,
+                borderColor: Colors[currentColorScheme].activeTabBorder,
+              },
+            ]}
+            textStyle={[styles.dropdownText, { color: Colors[currentColorScheme].text }]}
             zIndex={2000}
             zIndexInverse={2000}
           />
@@ -447,16 +558,22 @@ function RecipesScreen(): React.JSX.Element {
 export default RecipesScreen;
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  content: { flex: 1, padding: 16 },
-  headerContainer: { 
-    flexDirection: 'row', 
-    justifyContent: 'space-between', 
-    marginBottom: 12 
+  container: {
+    flex: 1,
+    // We'll apply dynamic background inline
   },
-  filterButton: { 
-    flexDirection: 'row', 
-    alignItems: 'center' 
+  content: {
+    flex: 1,
+    padding: 16,
+  },
+  headerContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  filterButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   sortHeader: {
     flexDirection: 'row',
@@ -464,17 +581,16 @@ const styles = StyleSheet.create({
   },
   sortByStatic: {
     fontSize: 16,
-    color: '#1B5E20',
+    marginRight: 4,
   },
   sortByButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginLeft: 4,
   },
   sortByText: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#1B5E20',
+    marginLeft: 2,
   },
   sortIconButton: {
     marginRight: 4,
@@ -482,7 +598,6 @@ const styles = StyleSheet.create({
   savedTab: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#2E7D32',
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 4,
@@ -494,22 +609,31 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginLeft: 6,
   },
-  dropdownContainer: { marginBottom: 12 },
-  dropdownStyle: { backgroundColor: '#f5f5f5', borderColor: '#ccc' },
-  dropdownListStyle: { backgroundColor: '#e8e8e8', borderColor: '#ccc' },
-  dropdownText: { fontSize: 16, color: '#000' },
-  searchContainer: { marginBottom: 12 },
+  dropdownContainer: {
+    marginBottom: 12,
+  },
+  dropdownStyle: {
+    borderWidth: 1,
+    borderRadius: 8,
+  },
+  dropdownListStyle: {
+    borderWidth: 1,
+    borderRadius: 8,
+  },
+  dropdownText: {
+    fontSize: 16,
+  },
+  searchContainer: {
+    marginBottom: 12,
+  },
   searchInput: {
     borderWidth: 1,
-    borderColor: '#ccc',
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: Platform.OS === 'ios' ? 12 : 8,
     fontSize: 16,
-    color: '#000',
   },
   recipeCard: {
-    backgroundColor: '#f8f8f8',
     borderRadius: 8,
     padding: 12,
     marginBottom: 12,
@@ -522,30 +646,24 @@ const styles = StyleSheet.create({
   recipeTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#1B5E20',
     marginBottom: 4,
   },
-  recipeDescription: { 
+  recipeDescription: {
     fontSize: 16,
-    color: '#333',
     marginBottom: 4,
   },
   prepTime: {
     fontSize: 14,
-    color: '#555',
+    marginTop: 4,
   },
   extraInfo: {
     fontSize: 14,
-    color: '#555',
     marginTop: 4,
   },
-HEAD
-
   subtab: {
     marginTop: 8,
-    backgroundColor: '#f0f0f0', // Grey white background for subtabs
     borderTopWidth: 1,
-    borderTopColor: '#ccc',
+    borderTopColor: '#ccc', // can also theme this if you want
     paddingTop: 8,
     padding: 8,
     borderRadius: 4,
@@ -553,13 +671,11 @@ HEAD
   sectionTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#2E7D32',
     marginTop: 8,
     marginBottom: 4,
   },
   listItem: {
     fontSize: 15,
-    color: '#333',
     marginBottom: 4,
     paddingLeft: 8,
   },
@@ -569,6 +685,5 @@ HEAD
   },
   emptyText: {
     fontSize: 18,
-    color: '#555',
   },
 });
