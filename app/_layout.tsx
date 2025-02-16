@@ -8,6 +8,9 @@ import 'react-native-reanimated';
 
 import { useColorScheme } from '@/hooks/useColorScheme';
 
+import { ThemeToggleProvider } from '@/components/ThemeToggleContext';
+
+
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
 
@@ -28,6 +31,9 @@ export default function RootLayout() {
   }
 
   return (
+    <ThemeToggleProvider>
+    {/* This ThemeProvider is still using system colorScheme, but you can 
+        replace it or combine it with your manual toggle if you like */}
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
@@ -35,5 +41,6 @@ export default function RootLayout() {
       </Stack>
       <StatusBar style="auto" />
     </ThemeProvider>
+  </ThemeToggleProvider>
   );
 }
