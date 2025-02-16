@@ -187,9 +187,6 @@ function RecipesScreen(): React.JSX.Element {
   );
 
   // --- Apply Sorting ---
-  // If no sort option is chosen, leave the list unsorted.
-  // For 'matching', sort descending (highest first).
-  // For 'time', sort ascending (lowest total time first).
   let sortedRecipes = [...filteredRecipes];
   if (sortBy === 'matching') {
     sortedRecipes.sort((a, b) =>
@@ -389,6 +386,15 @@ function RecipesScreen(): React.JSX.Element {
           />
         </View>
 
+        {/* Saved Recipes Tab (Right below Search Bar) */}
+        <TouchableOpacity
+          style={[styles.savedTab, { backgroundColor: Colors[currentColorScheme].accentButton }]}
+          onPress={() => setShowSaved(true)}
+        >
+          <MaterialIcons name="bookmark" size={24} color="#fff" />
+          <ThemedText style={styles.savedTabText}>Saved Recipes</ThemedText>
+        </TouchableOpacity>
+
         {/* Render Recipes List */}
         {showSaved ? (
           savedRecipes.length > 0 ? (
@@ -411,15 +417,6 @@ function RecipesScreen(): React.JSX.Element {
             renderItem={({ item }) => <RecipeCard recipe={item} />}
           />
         )}
-
-        {/* Saved Recipes Tab */}
-        <TouchableOpacity
-          style={[styles.savedTab, { backgroundColor: Colors[currentColorScheme].accentButton }]}
-          onPress={() => setShowSaved(true)}
-        >
-          <MaterialIcons name="bookmark" size={24} color="#fff" />
-          <ThemedText style={styles.savedTabText}>Saved Recipes</ThemedText>
-        </TouchableOpacity>
       </View>
     </SafeAreaView>
   );
