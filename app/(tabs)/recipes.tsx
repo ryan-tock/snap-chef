@@ -1,34 +1,40 @@
 import React, { useState } from 'react';
 import { SafeAreaView, ScrollView, StyleSheet, TextInput, Platform } from 'react-native';
-import { Picker } from '@react-native-picker/picker';
+import DropDownPicker from 'react-native-dropdown-picker';
 
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 
 export default function HomeScreen() {
-  // Search query state
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Dropdown (sorting/filter) state
-  const [filterOption, setFilterOption] = useState('all');
+  // DropDownPicker states
+  const [open, setOpen] = useState(false);
+  const [value, setValue] = useState('all'); // Current filter value
+  const [items, setItems] = useState([
+    { label: 'All', value: 'all' },
+    { label: 'Breakfast', value: 'Breakfast' },
+    { label: 'Lunch', value: 'Lunch' },
+    { label: 'Dinner', value: 'Dinner' },
+  ]);
 
-  // Imagine you have a list of recipes like this
+  // Example list of recipes
   const recipes = [
     { id: '1', name: 'Pasta', category: 'Dinner' },
     { id: '2', name: 'Pancakes', category: 'Breakfast' },
     { id: '3', name: 'Salad', category: 'Lunch' },
   ];
 
-  // Filter by name based on `searchQuery`
+  // 1) Filter by search text
   const filteredBySearch = recipes.filter((recipe) =>
     recipe.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // Filter (or sort) by drop-down selection
+  // 2) Filter by category drop-down (unless "all" is selected)
   let finalRecipes = filteredBySearch;
-  if (filterOption !== 'all') {
+  if (value !== 'all') {
     finalRecipes = filteredBySearch.filter(
-      (recipe) => recipe.category.toLowerCase() === filterOption.toLowerCase()
+      (recipe) => recipe.category.toLowerCase() === value.toLowerCase()
     );
   }
 
@@ -37,7 +43,7 @@ export default function HomeScreen() {
       <ScrollView contentContainerStyle={styles.scrollMenu}>
         {/* Title */}
         <ThemedView style={styles.titleContainer}>
-          <ThemedText type="title">Recipes</ThemedText>
+          <ThemedText type="title" style={styles.titleText}>Recipes</ThemedText>
         </ThemedView>
 
         {/* Search Bar */}
@@ -45,47 +51,37 @@ export default function HomeScreen() {
           <TextInput
             style={styles.searchInput}
             placeholder="Search recipes..."
+            placeholderTextColor="#777"
             value={searchQuery}
             onChangeText={setSearchQuery}
           />
         </ThemedView>
 
-        {/* Dropdown Menu (Filter / Sort) */}
-        <ThemedView style={styles.pickerContainer}>
-          <Picker
-            selectedValue={filterOption}
-            onValueChange={(itemValue) => setFilterOption(itemValue)}
-          >
-            <Picker.Item label="All" value="all" />
-            <Picker.Item label="Breakfast" value="Breakfast" />
-            <Picker.Item label="Lunch" value="Lunch" />
-            <Picker.Item label="Dinner" value="Dinner" />
-          </Picker>
-        </ThemedView>
+        {/* Dropdown Menu for Filters */}
+        <DropDownPicker
+          open={open}
+          value={value}
+          items={items}
+          setOpen={setOpen}
+          setValue={setValue}
+          setItems={setItems}
+          placeholder="Select a category"
+          style={styles.dropdownStyle}
+          containerStyle={styles.dropdownContainer}
+          dropDownContainerStyle={styles.dropdownListStyle}
+          textStyle={styles.dropdownText}
+          // Optional theme setting for DropDownPicker
+          // theme="DARK" 
+        />
 
-        {/* Display the filtered recipes */}
+        {/* Display filtered recipes */}
         {finalRecipes.map((recipe) => (
           <ThemedView key={recipe.id} style={styles.recipeItem}>
-            <ThemedText>{recipe.name}</ThemedText>
-            <ThemedText type="secondary">{recipe.category}</ThemedText>
+            {/* Change color of the text here */}
+            <ThemedText style={styles.recipeName}>{recipe.name}</ThemedText>
+            <ThemedText style={styles.recipeCategory}>{recipe.category}</ThemedText>
           </ThemedView>
         ))}
-
-        {/* 
-          You can also switch to a FlatList if you have a long list of recipes:
-
-          <FlatList
-            data={finalRecipes}
-            keyExtractor={(item) => item.id}
-            renderItem={({ item }) => (
-              <ThemedView style={styles.recipeItem}>
-                <ThemedText>{item.name}</ThemedText>
-                <ThemedText type="secondary">{item.category}</ThemedText>
-              </ThemedView>
-            )}
-          />
-        */}
-
       </ScrollView>
     </SafeAreaView>
   );
@@ -94,6 +90,7 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#000', // Dark background
   },
   scrollMenu: {
     paddingTop: 20,
@@ -102,29 +99,49 @@ const styles = StyleSheet.create({
   titleContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
     marginBottom: 12,
+  },
+  titleText: {
+    color: '#fff', // Title color on dark background
   },
   searchContainer: {
     marginBottom: 12,
   },
   searchInput: {
     borderWidth: 1,
-    borderColor: '#ccc',
+    borderColor: '#444',
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: Platform.OS === 'ios' ? 12 : 8,
+    color: '#fff', // Text color inside search bar
   },
-  pickerContainer: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 8,
+  dropdownContainer: {
     marginBottom: 12,
   },
+  dropdownStyle: {
+    backgroundColor: '#111', // Background color of closed dropdown
+    borderColor: '#444',
+  },
+  dropdownListStyle: {
+    backgroundColor: '#222', // Background color of the opened dropdown list
+    borderColor: '#444',
+  },
+  dropdownText: {
+    color: '#fff', // Text color for dropdown items
+  },
   recipeItem: {
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#f5f5f5', // Light card color
     padding: 12,
     borderRadius: 8,
     marginVertical: 4,
+  },
+  recipeName: {
+    color: '#000', // If you want the recipe name black on a light card
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  recipeCategory: {
+    color: '#666', // Slightly lighter text for the category
+    fontSize: 14,
   },
 });
