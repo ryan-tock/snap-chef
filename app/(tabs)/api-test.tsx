@@ -193,22 +193,6 @@ const ApiTest = () => {
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
         <Text style={styles.title}>Snap Chef</Text>
-          
-        <TouchableOpacity 
-          style={styles.ingredientsButton}
-          onPress={() => router.push('/ingredients')}
-        >
-          <MaterialIcons name="kitchen" size={24} color="white" />
-          <Text style={styles.buttonText}>Ingredients</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity 
-          style={styles.recipesButton}
-          onPress={() => router.push('/recipes')}
-        >
-          <MaterialIcons name="restaurant-menu" size={24} color="white" />
-          <Text style={styles.buttonText}>Recipes</Text>
-        </TouchableOpacity>
 
         {!cameraShown ? (
           <>
@@ -248,9 +232,16 @@ const ApiTest = () => {
                 </TouchableOpacity>
               </View>
             ) : (
-              <TouchableOpacity style={styles.captureButton} onPress={takePicture}>
-                <Text>📸 Take Photo</Text>
-              </TouchableOpacity>
+              <View style={styles.buttonRow}>
+                <TouchableOpacity style={styles.captureButton} onPress={function(){
+                  setCameraShown(false);
+                }}>
+                  <Text>❌ Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.captureButton} onPress={takePicture}>
+                  <Text>📸 Take Photo</Text>
+                </TouchableOpacity>
+              </View>
             )}
           </>
         )}
