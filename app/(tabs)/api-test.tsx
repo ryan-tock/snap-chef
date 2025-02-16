@@ -189,22 +189,6 @@ const ApiTest = () => {
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
         <Text style={styles.title}>Snap Chef</Text>
-          
-        <TouchableOpacity 
-          style={styles.ingredientsButton}
-          onPress={() => router.push('/ingredients')}
-        >
-          <MaterialIcons name="kitchen" size={24} color="white" />
-          <Text style={styles.buttonText}>Ingredients</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity 
-          style={styles.recipesButton}
-          onPress={() => router.push('/recipes')}
-        >
-          <MaterialIcons name="restaurant-menu" size={24} color="white" />
-          <Text style={styles.buttonText}>Recipes</Text>
-        </TouchableOpacity>
 
         {!cameraShown ? (
           <>
