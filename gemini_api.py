@@ -4,7 +4,7 @@ import PIL.Image
 import json
 
 model = "gemini-2.0-flash"
-client = genai.Client(api_key="AIzaSyCyVeSxYdPBcrKF0bgHqDXAbAhzGnZBnVQ")
+client = genai.Client(api_key="AIzaSyC5Q2H6J1XhSKgvIDJa31H4vuAN9CE6HRo")
 
 def parse_foods(foods_txt):
     return [item.strip().lower() for item in foods_txt.split(',')]

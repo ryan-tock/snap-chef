@@ -8,7 +8,7 @@ import {
   TouchableOpacity
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useState, useEffect } from 'react';
 import DropDownPicker from 'react-native-dropdown-picker';
 
@@ -27,11 +27,12 @@ interface Recipe {
   dietary?: string[];
   requiredItems?: string[];
   expiringSoon?: boolean;
-  matchingPercentage?: number; // New property (0 to 100)
+  matchingPercentage?: number;
 }
 
 function RecipesScreen(): React.JSX.Element {
   const params = useLocalSearchParams();
+  const router = useRouter();
 
   // Load recipes from route parameters if provided; otherwise, use sample recipes.
   const [recipes, setRecipes] = useState<Recipe[]>([]);
@@ -45,10 +46,9 @@ function RecipesScreen(): React.JSX.Element {
   const [searchQuery, setSearchQuery] = useState('');
 
   // --- Sort State ---
-  // Updated sort option label.
   const baseSortOptions = [
     { label: 'No Sort', value: 'none' },
-    { label: '% Ingredients', value: 'matching' },
+    { label: '% Matching Ingredients', value: 'matching' },
     { label: 'Time', value: 'time' },
     { label: 'Servings', value: 'servings' },
   ];
@@ -57,7 +57,6 @@ function RecipesScreen(): React.JSX.Element {
   const [sortItems, setSortItems] = useState<{ label: string; value: string }[]>(baseSortOptions);
   const [openSort, setOpenSort] = useState(false);
 
-  // Toggle function for sort direction.
   const toggleSortDirection = () => {
     if (sortBy !== 'none') {
       setSortDirection(prev => (prev === 'asc' ? 'desc' : 'asc'));
@@ -124,6 +123,21 @@ function RecipesScreen(): React.JSX.Element {
     { label: 'Including Expiring Soon', value: 'ExpiringSoon' },
   ];
   const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
+
+  // --- Bookmarking State ---
+  const [savedRecipes, setSavedRecipes] = useState<Recipe[]>([]);
+  const [openSavedFolder, setOpenSavedFolder] = useState(false);
+
+  const toggleBookmark = (recipe: Recipe) => {
+    setSavedRecipes(prev => {
+      const exists = prev.find(r => r.id === recipe.id);
+      if (exists) {
+        return prev.filter(r => r.id !== recipe.id);
+      } else {
+        return [...prev, recipe];
+      }
+    });
+  };
 
   // --- Sample Recipes ---
   const sampleRecipes: Recipe[] = [
@@ -255,16 +269,27 @@ function RecipesScreen(): React.JSX.Element {
   // Recipe Card without image at the top.
   const RecipeCard = ({ recipe }: { recipe: Recipe }) => {
     const [expanded, setExpanded] = useState(false);
+    const isSaved = savedRecipes.some(r => r.id === recipe.id);
+
     return (
       <TouchableOpacity onPress={() => setExpanded(!expanded)}>
         <ThemedView style={styles.recipeCard}>
-          <ThemedText style={styles.recipeTitle}>{recipe.title}</ThemedText>
+          <View style={styles.cardHeader}>
+            <ThemedText style={styles.recipeTitle}>{recipe.title}</ThemedText>
+            <TouchableOpacity onPress={() => toggleBookmark(recipe)}>
+              <MaterialIcons 
+                name={isSaved ? "bookmark" : "bookmark-border"} 
+                size={24} 
+                color="#1B5E20" 
+              />
+            </TouchableOpacity>
+          </View>
           <ThemedText style={styles.recipeDescription}>{recipe.description}</ThemedText>
           <ThemedText style={styles.prepTime}>
             Prep Time: {recipe.prepTime}m | Total Time: {recipe.prepTime + recipe.cookTime}m
           </ThemedText>
           <ThemedText style={styles.extraInfo}>
-            Ingredients: {recipe.matchingPercentage ? recipe.matchingPercentage + '%' : '0%'} | Servings: {recipe.servings}
+            % Matching: {recipe.matchingPercentage ? recipe.matchingPercentage + '%' : '0%'} | Servings: {recipe.servings}
           </ThemedText>
           {expanded && (
             <ThemedView style={styles.subtab}>
@@ -288,7 +313,7 @@ function RecipesScreen(): React.JSX.Element {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
-        {/* Header with Filter and Sort Section */}
+        {/* Header with Filter, Sort, and Bookmark Section */}
         <View style={styles.headerContainer}>
           <TouchableOpacity 
             style={styles.filterButton}
@@ -299,7 +324,6 @@ function RecipesScreen(): React.JSX.Element {
             <MaterialIcons name="arrow-drop-down" size={24} color="#1B5E20" />
           </TouchableOpacity>
           <View style={styles.sortHeader}>
-            {/* Tappable arrow icon on the left toggles sort direction */}
             <TouchableOpacity onPress={toggleSortDirection} style={styles.sortIconButton}>
               <MaterialIcons 
                 name={sortDirection === 'asc' ? 'arrow-upward' : 'arrow-downward'} 
@@ -315,7 +339,7 @@ function RecipesScreen(): React.JSX.Element {
               <ThemedText style={styles.sortByText}>
                 {sortBy !== 'none'
                   ? sortBy === 'matching'
-                    ? '% Ingredients'
+                    ? '% Matching Ingredients'
                     : sortBy === 'time'
                     ? 'Time'
                     : sortBy === 'servings'
@@ -324,8 +348,35 @@ function RecipesScreen(): React.JSX.Element {
                   : 'Select'}
               </ThemedText>
             </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.bookmarkHeaderButton}
+              onPress={() => setOpenSavedFolder(!openSavedFolder)}
+            >
+              <MaterialIcons 
+                name="bookmark" 
+                size={24} 
+                color="#1B5E20" 
+              />
+            </TouchableOpacity>
           </View>
         </View>
+
+        {/* Saved Recipes Folder (pinned at the top) */}
+        {openSavedFolder && (
+          <View style={styles.savedFolder}>
+            <ThemedText style={styles.folderTitle}>Saved Recipes</ThemedText>
+            <FlatList
+              horizontal
+              data={savedRecipes}
+              keyExtractor={item => item.id}
+              renderItem={({ item }) => (
+                <View style={styles.savedRecipeItem}>
+                  <ThemedText style={styles.savedRecipeText}>{item.title}</ThemedText>
+                </View>
+              )}
+            />
+          </View>
+        )}
 
         {/* Filter Dropdown */}
         {openFilter && (
@@ -426,6 +477,31 @@ const styles = StyleSheet.create({
   sortIconButton: {
     marginRight: 4,
   },
+  bookmarkHeaderButton: {
+    marginLeft: 8,
+  },
+  savedFolder: {
+    backgroundColor: '#e0e0e0',
+    padding: 8,
+    borderRadius: 4,
+    marginBottom: 12,
+  },
+  folderTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#1B5E20',
+    marginBottom: 4,
+  },
+  savedRecipeItem: {
+    backgroundColor: '#fff',
+    padding: 6,
+    borderRadius: 4,
+    marginRight: 8,
+  },
+  savedRecipeText: {
+    fontSize: 14,
+    color: '#1B5E20',
+  },
   dropdownContainer: { marginBottom: 12 },
   dropdownStyle: { backgroundColor: '#f5f5f5', borderColor: '#ccc' },
   dropdownListStyle: { backgroundColor: '#e8e8e8', borderColor: '#ccc' },
@@ -445,6 +521,11 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 12,
     marginBottom: 12,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   recipeTitle: {
     fontSize: 18,
@@ -468,7 +549,7 @@ const styles = StyleSheet.create({
   },
   subtab: {
     marginTop: 8,
-    backgroundColor: '#f0f0f0', // Grey white background for subtabs
+    backgroundColor: '#f0f0f0',
     borderTopWidth: 1,
     borderTopColor: '#ccc',
     paddingTop: 8,
