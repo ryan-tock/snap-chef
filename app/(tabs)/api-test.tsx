@@ -44,20 +44,36 @@ const ApiTest = () => {
     const lines = contents.split('\n');
     
     lines.forEach(line => {
-      const match = line.match(/\*\*([^:]+):\*\*\s*([^,\n]+)/);
-      if (match) {
-        const name = match[1].trim();
-        const quantityStr = match[2].trim();
+      if (line.includes(':')) {
+        const [name, quantity] = line.split(':').map(s => s.trim());
+        const cleanName = name.replace(/\*/g, '').trim();
         
-        const numericMatch = quantityStr.match(/(\d+)(?:-(\d+))?\s*([a-zA-Z]*)/);
-        if (numericMatch) {
-          const amount = parseInt(numericMatch[2] || numericMatch[1]);
-          const unit = numericMatch[3] || 'pieces';
+        if (cleanName && quantity) {
+          // Handle ranges like "10-15" and extract numbers
+          const numbers = quantity.match(/\d+/g);
+          let amount = 0;
+          let unit = quantity.replace(/[0-9-]/g, '').trim();
           
+          if (numbers) {
+            if (numbers.length === 2) {
+              // If range (e.g., "10-15"), take average
+              amount = Math.round((parseInt(numbers[0]) + parseInt(numbers[1])) / 2);
+            } else {
+              // Single number
+              amount = parseInt(numbers[0]);
+            }
+          }
+
+          // Handle special cases like "A small amount" or "A dollop"
+          if (!amount) {
+            amount = 1;
+            unit = quantity.trim();
+          }
+
           ingredientsList.push({
-            name,
-            amount,
-            unit
+            name: cleanName,
+            amount: amount,
+            unit: unit || 'pieces'
           });
         }
       }
@@ -127,6 +143,12 @@ const ApiTest = () => {
         setMatchedRecipes(Array.isArray(data.matched_recipes) ? data.matched_recipes : []);
         console.log('Setting AI suggestions:', data.ai_suggestions);
         setAiSuggestions(data.ai_suggestions || '');
+        
+        // Navigate to ingredients screen with the new data
+        router.push({
+          pathname: '/ingredients',
+          params: { ingredients: JSON.stringify(parsedIngredients) }
+        });
       } else {
         Alert.alert('Error', data.error || 'Failed to analyze image');
       }

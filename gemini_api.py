@@ -3,7 +3,7 @@ from google.genai import types
 import PIL.Image
 import json
 
-model = "gemini-2.0-flash-lite-preview-02-05"
+model = "gemini-2.0-flash"
 client = genai.Client(api_key="AIzaSyCyVeSxYdPBcrKF0bgHqDXAbAhzGnZBnVQ")
 
 def parse_foods(foods_txt):
