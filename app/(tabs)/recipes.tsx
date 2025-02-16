@@ -382,42 +382,36 @@ function RecipesScreen(): React.JSX.Element {
       <View style={styles.content}>
         {/* Header with Filter and Sort Section */}
         <View style={styles.headerContainer}>
+          {/* Filter Button */}
           <TouchableOpacity 
             style={styles.filterButton}
             onPress={() => setOpenFilter(!openFilter)}
           >
-            <MaterialIcons name="filter-list" size={24} color={Colors[currentColorScheme].text} />
-            <ThemedText style={[styles.sortByText, { color: Colors[currentColorScheme].text }]}>
-              Filter
+            <MaterialIcons name="filter-list" size={24} color={Colors[currentColorScheme].tint} />
+            <ThemedText style={[styles.filterText, { color: Colors[currentColorScheme].text }]}>
+              Filter: {selectedFilters.length > 0 
+                ? selectedFilters.join(', ') 
+                : 'None'}
             </ThemedText>
-            <MaterialIcons name="arrow-drop-down" size={24} color={Colors[currentColorScheme].text} />
           </TouchableOpacity>
+
+          {/* Sort Section - Move to right */}
           <View style={styles.sortHeader}>
-            <TouchableOpacity onPress={toggleSortDirection} style={styles.sortIconButton}>
-              <MaterialIcons
-                name={sortDirection === 'asc' ? 'arrow-upward' : 'arrow-downward'}
-                size={20}
-                color={Colors[currentColorScheme].text}
-              />
-            </TouchableOpacity>
             <ThemedText style={[styles.sortByStatic, { color: Colors[currentColorScheme].text }]}>
-              Sort By:
+              Sort:
             </ThemedText>
             <TouchableOpacity
-              style={styles.sortByButton}
+              style={[styles.sortByButton, { backgroundColor: Colors[currentColorScheme].cardBackground }]}
               onPress={() => setOpenSort(!openSort)}
             >
               <ThemedText style={[styles.sortByText, { color: Colors[currentColorScheme].text }]}>
-                {sortBy !== 'none'
-                  ? sortBy === 'matching'
-                    ? '% Matching Ingredients'
-                    : sortBy === 'time'
-                    ? 'Time'
-                    : sortBy === 'servings'
-                    ? 'Servings'
-                    : ''
-                  : 'Select'}
+                {sortBy === 'none' ? 'Select' : sortBy}
               </ThemedText>
+              <MaterialIcons 
+                name="arrow-drop-down" 
+                size={24} 
+                color={Colors[currentColorScheme].text} 
+              />
             </TouchableOpacity>
           </View>
         </View>
@@ -477,68 +471,75 @@ function RecipesScreen(): React.JSX.Element {
 
         {/* Filter Dropdown */}
         {openFilter && (
-          <DropDownPicker<string>
-            open={openFilter}
-            value={selectedFilters}
-            items={filterOptions}
-            setOpen={setOpenFilter}
-            setValue={setSelectedFilters}
-            placeholder="Select filter options"
-            multiple={true}
-            style={[
-              styles.dropdownStyle,
-              {
-                backgroundColor: Colors[currentColorScheme].cardBackground,
-                borderColor: Colors[currentColorScheme].activeTabBorder,
-              },
-            ]}
-            containerStyle={styles.dropdownContainer}
-            dropDownContainerStyle={[
-              styles.dropdownListStyle,
-              {
-                backgroundColor: Colors[currentColorScheme].cardBackground,
-                borderColor: Colors[currentColorScheme].activeTabBorder,
-              },
-            ]}
-            textStyle={[styles.dropdownText, { color: Colors[currentColorScheme].text }]}
-            zIndex={2200}
-            zIndexInverse={2200}
-          />
+          <View style={styles.dropdownContainer}>
+            <DropDownPicker<string>
+              open={openFilter}
+              value={selectedFilters}
+              items={filterOptions}
+              setOpen={setOpenFilter}
+              setValue={(val) => {
+                setSelectedFilters(val);
+                setOpenFilter(false);  // Close dropdown after selection
+              }}
+              placeholder="Select filter options"
+              multiple={true}
+              style={[
+                styles.dropdownStyle,
+                {
+                  backgroundColor: Colors[currentColorScheme].cardBackground,
+                  borderColor: Colors[currentColorScheme].activeTabBorder,
+                },
+              ]}
+              containerStyle={styles.dropdownContainer}
+              dropDownContainerStyle={[
+                styles.dropdownListStyle,
+                {
+                  backgroundColor: Colors[currentColorScheme].cardBackground,
+                  borderColor: Colors[currentColorScheme].activeTabBorder,
+                },
+              ]}
+              textStyle={[styles.dropdownText, { color: Colors[currentColorScheme].text }]}
+              zIndex={2200}
+              zIndexInverse={1000}
+            />
+          </View>
         )}
 
         {/* Sort Dropdown */}
         {openSort && (
-          <DropDownPicker<string>
-            open={openSort}
-            value={sortBy}
-            items={sortItems}
-            setOpen={setOpenSort}
-            setValue={(callback) => {
-              const newValue = typeof callback === 'function' ? callback(sortBy) : callback;
-              handleSortChange(newValue as 'none' | 'matching' | 'time' | 'servings');
-            }}
-            setItems={setSortItems}
-            placeholder="Sort by Option"
-            multiple={false}
-            style={[
-              styles.dropdownStyle,
-              {
-                backgroundColor: Colors[currentColorScheme].cardBackground,
-                borderColor: Colors[currentColorScheme].activeTabBorder,
-              },
-            ]}
-            containerStyle={styles.dropdownContainer}
-            dropDownContainerStyle={[
-              styles.dropdownListStyle,
-              {
-                backgroundColor: Colors[currentColorScheme].cardBackground,
-                borderColor: Colors[currentColorScheme].activeTabBorder,
-              },
-            ]}
-            textStyle={[styles.dropdownText, { color: Colors[currentColorScheme].text }]}
-            zIndex={2000}
-            zIndexInverse={2000}
-          />
+          <View style={styles.dropdownContainer}>
+            <DropDownPicker
+              open={openSort}
+              value={sortBy}
+              items={sortItems}
+              setOpen={setOpenSort}
+              setValue={(callback) => {
+                const newValue = typeof callback === 'function' ? callback(sortBy) : callback;
+                handleSortChange(newValue as 'none' | 'matching' | 'time' | 'servings');
+              }}
+              setItems={setSortItems}
+              placeholder="Sort by Option"
+              multiple={false}
+              style={[
+                styles.dropdownStyle,
+                {
+                  backgroundColor: Colors[currentColorScheme].cardBackground,
+                  borderColor: Colors[currentColorScheme].activeTabBorder,
+                },
+              ]}
+              containerStyle={styles.dropdownContainer}
+              dropDownContainerStyle={[
+                styles.dropdownListStyle,
+                {
+                  backgroundColor: Colors[currentColorScheme].cardBackground,
+                  borderColor: Colors[currentColorScheme].activeTabBorder,
+                },
+              ]}
+              textStyle={[styles.dropdownText, { color: Colors[currentColorScheme].text }]}
+              zIndex={2000}
+              zIndexInverse={1000}
+            />
+          </View>
         )}
       </View>
     </SafeAreaView>
@@ -560,10 +561,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: 12,
+    zIndex: 3000,
   },
   filterButton: {
     flexDirection: 'row',
     alignItems: 'center',
+    padding: 8,
+    maxWidth: '60%',
+  },
+  filterText: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: 8,
+    flex: 1,
   },
   sortHeader: {
     flexDirection: 'row',
@@ -576,13 +586,13 @@ const styles = StyleSheet.create({
   sortByButton: {
     flexDirection: 'row',
     alignItems: 'center',
+    padding: 8,
+    borderRadius: 8,
+    marginLeft: 8,
   },
   sortByText: {
     fontSize: 16,
-    fontWeight: 'bold',
-    marginLeft: 2,
-  },
-  sortIconButton: {
+    fontWeight: '600',
     marginRight: 4,
   },
   savedTab: {
@@ -600,15 +610,30 @@ const styles = StyleSheet.create({
     marginLeft: 6,
   },
   dropdownContainer: {
-    marginBottom: 12,
+    position: 'absolute',
+    top: 50,
+    left: 0,
+    right: 0,
+    zIndex: 2000,
+    paddingHorizontal: 16,
   },
   dropdownStyle: {
     borderWidth: 1,
     borderRadius: 8,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
   },
   dropdownListStyle: {
     borderWidth: 1,
     borderRadius: 8,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
   },
   dropdownText: {
     fontSize: 16,
