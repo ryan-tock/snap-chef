@@ -67,7 +67,7 @@ export default function HomeScreen() {
         {finalRecipes.map((recipe) => (
           <ThemedView key={recipe.id} style={styles.recipeItem}>
             <ThemedText>{recipe.name}</ThemedText>
-            <ThemedText type="secondary">{recipe.category}</ThemedText>
+            <ThemedText type="subtitle">{recipe.category}</ThemedText>
           </ThemedView>
         ))}
 

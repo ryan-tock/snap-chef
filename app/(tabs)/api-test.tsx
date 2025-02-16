@@ -155,6 +155,14 @@ const ApiTest = () => {
           </TouchableOpacity>
 
           <TouchableOpacity 
+            style={styles.recipesButton}
+            onPress={() => router.push('/recipes')}
+          >
+            <MaterialIcons name="restaurant-menu" size={24} color="white" />
+            <Text style={styles.buttonText}>Recipes</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity 
             style={styles.uploadButton} 
             onPress={pickImage}
           >
@@ -198,19 +206,6 @@ const ApiTest = () => {
               <Text style={styles.cardTitle}>AI Recipe Suggestions</Text>
               <Text style={styles.cardText}>{aiSuggestions}</Text>
             </View>
-          )}
-
-          {ingredients.length > 0 && (
-            <TouchableOpacity 
-              style={styles.ingredientsButton}
-              onPress={() => router.push({
-                pathname: '/ingredients',
-                params: { ingredients: JSON.stringify(ingredients) }
-              })}
-            >
-              <MaterialIcons name="kitchen" size={24} color="white" />
-              <Text style={styles.buttonText}>View Ingredients</Text>
-            </TouchableOpacity>
           )}
         </View>
       </ScrollView>
@@ -335,6 +330,15 @@ const styles = StyleSheet.create({
   },
   ingredientsButton: {
     backgroundColor: '#1976D2',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 15,
+    borderRadius: 10,
+    marginBottom: 20,
+  },
+  recipesButton: {
+    backgroundColor: '#FF5722',  // Orange color to distinguish from other buttons
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
