@@ -50,10 +50,18 @@ function RecipesScreen(): React.JSX.Element {
   useEffect(() => {
     if (params.recipes) {
       try {
-        // The recipes are double-stringified, so we need to parse twice
+        // First parse the outer response
         const outerParsed = JSON.parse(params.recipes as string);
-        const recipes = JSON.parse(outerParsed.recipes);
         
+        // Then parse the recipes string
+        let recipes;
+        try {
+          recipes = JSON.parse(outerParsed.recipes);
+        } catch (e) {
+          console.error('Inner parse error:', e);
+          recipes = outerParsed.recipes; // In case it's already parsed
+        }
+
         // Transform the recipes to ensure all required fields exist
         const processedRecipes = recipes.map((recipe: any) => ({
           id: `recipe-${Date.now()}-${Math.random()}`,
@@ -69,6 +77,7 @@ function RecipesScreen(): React.JSX.Element {
         }));
 
         setRecipes(processedRecipes);
+        
       } catch (e) {
         console.error('Failed to parse recipes:', e);
       }

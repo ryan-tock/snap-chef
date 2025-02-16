@@ -71,11 +71,16 @@ def recipe_endpoint():
         print(f"Raw Gemini response: {recipes_response}")
 
         try:
+            # Parse the response to ensure it's valid JSON
             parsed_recipes = json.loads(recipes_response)
-            recipes_json = json.dumps(parsed_recipes)
+            # Don't stringify again, just return the parsed object
+            return jsonify({
+                'success': True,
+                'recipes': parsed_recipes  # Return the parsed object directly
+            })
         except json.JSONDecodeError as e:
             print(f"JSON parse error: {e}")
-            recipes_json = json.dumps([{
+            fallback_recipe = [{
                 "name": "Sample Recipe",
                 "category": "Dinner",
                 "description": recipes_response[:100] + "...",
@@ -84,12 +89,11 @@ def recipe_endpoint():
                 "prepTime": 0,
                 "cookTime": 0,
                 "nutritionalValues": "N/A"
-            }])
-
-        return jsonify({
-            'success': True,
-            'recipes': recipes_json
-        })
+            }]
+            return jsonify({
+                'success': True,
+                'recipes': fallback_recipe  # Return the fallback object directly
+            })
         
     except Exception as e:
         print(f"Server error: {str(e)}")
