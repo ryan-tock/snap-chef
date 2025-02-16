@@ -16,13 +16,10 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { CameraView, CameraType, useCameraPermissions, Camera } from 'expo-camera';
 import { useRouter } from 'expo-router';
 
-<<<<<<< HEAD
 import { Colors } from '@/constants/Colors';
 import { useThemeToggle } from '@/components/ThemeToggleContext';
-=======
 const screenHeight = Dimensions.get('window').height;
 const cameraHeight = screenHeight * 0.7;
->>>>>>> d9cb9103c9a1365766be8c153dfbe788b589d4c1
 
 interface Recipe {
   title: string;
