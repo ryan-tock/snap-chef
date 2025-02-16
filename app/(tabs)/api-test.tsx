@@ -184,14 +184,6 @@ const ApiTest = () => {
           <Text style={styles.buttonText}>Recipes</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity 
-          style={styles.uploadButton} 
-          onPress={pickImage}
-        >
-          <MaterialIcons name="photo-library" size={24} color="white" />
-          <Text style={styles.uploadButtonText}>Choose Photo</Text>
-        </TouchableOpacity>
-
         {!cameraShown ? (
           <>
             <TouchableOpacity style={styles.uploadButton} onPress={pickImage}>
