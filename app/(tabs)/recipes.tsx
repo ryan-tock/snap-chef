@@ -5,8 +5,7 @@ import {
   TextInput,
   Platform,
   FlatList,
-  TouchableOpacity,
-  Alert
+  TouchableOpacity
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useLocalSearchParams } from 'expo-router';
@@ -19,6 +18,9 @@ import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { Colors } from '@/constants/Colors';
 import { useThemeToggle } from '@/components/ThemeToggleContext';
+
+// 1) AsyncStorage to persist saved recipes:
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface Recipe {
   id: string;
@@ -36,14 +38,13 @@ interface Recipe {
 }
 
 function RecipesScreen(): React.JSX.Element {
-  // Use theme toggle
   const { isDark } = useThemeToggle();
   const currentColorScheme: 'light' | 'dark' = isDark ? 'dark' : 'light';
 
+  // 2) Read route params to load generated recipes
   const params = useLocalSearchParams();
-
-  // Populate recipes only from Gemini ingredients (via route parameters)
   const [recipes, setRecipes] = useState<Recipe[]>([]);
+
   useEffect(() => {
     if (!params.recipes) {
       setRecipes([]);
@@ -54,43 +55,43 @@ function RecipesScreen(): React.JSX.Element {
         typeof params.recipes === 'string'
           ? params.recipes
           : JSON.stringify(params.recipes);
+
       const parsed = JSON.parse(recipesString);
       if (parsed.success && Array.isArray(parsed.recipes)) {
-        const processedRecipes = parsed.recipes.map((recipe: any) => ({
-          id: recipe.id,
-          title: recipe.name,
-          description: recipe.description,
-          prepTime: recipe.prepTime,
-          cookTime: recipe.cookTime,
-          servings: recipe.servings,
-          ingredients: Array.isArray(recipe.ingredients)
-            ? recipe.ingredients.map((ing: any) =>
+        const processedRecipes = parsed.recipes.map((r: any) => ({
+          id: r.id,
+          title: r.name,
+          description: r.description,
+          prepTime: r.prepTime,
+          cookTime: r.cookTime,
+          servings: r.servings,
+          ingredients: Array.isArray(r.ingredients)
+            ? r.ingredients.map((ing: any) =>
                 typeof ing === 'string'
                   ? ing
                   : `${ing.name} (${ing.amount} ${ing.unit})`
               )
             : [],
-          instructions: recipe.instructions,
-          dietary: recipe.dietary || [],
-          requiredItems: recipe.requiredItems || [],
-          expiringSoon: recipe.expiringSoon || false,
-          matchingPercentage: recipe.matchingPercentage || 0,
+          instructions: r.instructions,
+          dietary: r.dietary || [],
+          requiredItems: r.requiredItems || [],
+          expiringSoon: r.expiringSoon || false,
+          matchingPercentage: r.matchingPercentage || 0,
         }));
         setRecipes(processedRecipes);
       } else {
         console.error('Invalid recipes data structure:', parsed);
         setRecipes([]);
       }
-    } catch (e) {
-      console.error('Failed to parse recipes:', e);
+    } catch (err) {
+      console.error('Failed to parse recipes:', err);
       setRecipes([]);
     }
   }, [params.recipes]);
 
-  // --- Search State ---
+  // 3) Search & Sort
   const [searchQuery, setSearchQuery] = useState('');
 
-  // --- Sort State ---
   const baseSortOptions = [
     { label: 'No Sort', value: 'none' },
     { label: '% Ingredients', value: 'matching' },
@@ -99,7 +100,7 @@ function RecipesScreen(): React.JSX.Element {
   ];
   const [sortBy, setSortBy] = useState<'none' | 'matching' | 'time' | 'servings'>('none');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
-  const [sortItems, setSortItems] = useState<{ label: string; value: string }[]>(baseSortOptions);
+  const [sortItems, setSortItems] = useState(baseSortOptions);
   const [openSort, setOpenSort] = useState(false);
 
   const toggleSortDirection = () => {
@@ -120,49 +121,8 @@ function RecipesScreen(): React.JSX.Element {
     }
   };
 
-  const onSortValueChange = (callback: string | ((prev: string) => string)) => {
-    const newValue = typeof callback === 'function' ? callback(sortBy) : callback;
-    handleSortChange(newValue as "none" | "matching" | "time" | "servings");
-  };
-
-  // --- Filtering Dropdown (for title) ---
+  // 4) Filtering (for demonstration, using multi-select)
   const [openFilter, setOpenFilter] = useState(false);
-  const [filterBy, setFilterBy] = useState('All');
-  const [filterItems, setFilterItems] = useState([
-    { label: 'All', value: 'All' },
-    { label: 'Pasta', value: 'Pasta' },
-    { label: 'Pancakes', value: 'Pancakes' },
-    { label: 'Salad', value: 'Salad' },
-  ]);
-
-  // --- Filter Panel for extra filters (if needed) ---
-  const [filterPanelOpen, setFilterPanelOpen] = useState(false);
-  const [dietaryFilter, setDietaryFilter] = useState('All');
-  const [dietaryItems, setDietaryItems] = useState([
-    { label: 'All', value: 'All' },
-    { label: 'Vegetarian', value: 'Vegetarian' },
-    { label: 'Vegan', value: 'Vegan' },
-    { label: 'Gluten-Free', value: 'Gluten-Free' },
-  ]);
-  const [servingsFilter, setServingsFilter] = useState('All');
-  const [servingsItems, setServingsItems] = useState([
-    { label: 'All', value: 'All' },
-    { label: '1', value: '1' },
-    { label: '2', value: '2' },
-    { label: '3', value: '3' },
-    { label: '4', value: '4' },
-    { label: '5', value: '5' },
-  ]);
-  const [requiredFilter, setRequiredFilter] = useState('All');
-  const [requiredItems, setRequiredItems] = useState([
-    { label: 'All', value: 'All' },
-    { label: 'Cheese', value: 'Cheese' },
-    { label: 'Eggs', value: 'Eggs' },
-    { label: 'Milk', value: 'Milk' },
-    { label: 'Pasta', value: 'Pasta' },
-  ]);
-
-  // --- New Multi-select Filter Dropdown for dietary and expiring soon ---
   const filterOptions = [
     { label: 'Vegan', value: 'Vegan' },
     { label: 'Vegetarian', value: 'Vegetarian' },
@@ -171,8 +131,39 @@ function RecipesScreen(): React.JSX.Element {
   ];
   const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
 
-  // --- Bookmarking State ---
+  // 5) Saved recipes & bookmarking
   const [savedRecipes, setSavedRecipes] = useState<Recipe[]>([]);
+  const [showSaved, setShowSaved] = useState(false);
+
+  // 6) Load any saved recipes on mount
+  useEffect(() => {
+    const loadSavedRecipes = async () => {
+      try {
+        const stored = await AsyncStorage.getItem('SAVED_RECIPES');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          setSavedRecipes(parsed);
+        }
+      } catch (err) {
+        console.error('Error loading saved recipes:', err);
+      }
+    };
+    loadSavedRecipes();
+  }, []);
+
+  // 7) Persist saved recipes whenever they change
+  useEffect(() => {
+    const storeSavedRecipes = async () => {
+      try {
+        await AsyncStorage.setItem('SAVED_RECIPES', JSON.stringify(savedRecipes));
+      } catch (err) {
+        console.error('Error saving recipes:', err);
+      }
+    };
+    storeSavedRecipes();
+  }, [savedRecipes]);
+
+  // 8) Toggle bookmark
   const toggleBookmark = (recipe: Recipe) => {
     setSavedRecipes(prev => {
       const exists = prev.find(r => r.id === recipe.id);
@@ -180,16 +171,13 @@ function RecipesScreen(): React.JSX.Element {
     });
   };
 
-  // --- Toggle between All Recipes and Saved Recipes ---
-  const [showSaved, setShowSaved] = useState(false);
-
-  // --- Apply Filter (by title) ---
+  // 9) Filter + search
   const filteredRecipes = recipes.filter(recipe =>
     recipe.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
     recipe.description.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // --- Apply Sorting ---
+  // 10) Sorting
   let sortedRecipes = [...filteredRecipes];
   if (sortBy === 'matching') {
     sortedRecipes.sort((a, b) =>
@@ -211,7 +199,7 @@ function RecipesScreen(): React.JSX.Element {
     );
   }
 
-  // Recipe Card Component
+  // 11) Recipe card component
   const RecipeCard = ({ recipe }: { recipe: Recipe }) => {
     const [expanded, setExpanded] = useState(false);
     const isSaved = savedRecipes.some(r => r.id === recipe.id);
@@ -251,7 +239,8 @@ function RecipesScreen(): React.JSX.Element {
           <ThemedText
             style={[styles.extraInfo, { color: Colors[currentColorScheme].secondaryText }]}
           >
-            % Matching: {recipe.matchingPercentage ? recipe.matchingPercentage + '%' : '0%'} | Servings: {recipe.servings}
+            % Matching: {recipe.matchingPercentage ? recipe.matchingPercentage + '%' : '0%'}
+            {'  '}|{'  '}Servings: {recipe.servings}
           </ThemedText>
           {expanded && (
             <ThemedView
@@ -291,10 +280,16 @@ function RecipesScreen(): React.JSX.Element {
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: Colors[currentColorScheme].background }]}>
+    <SafeAreaView
+      style={[
+        styles.container,
+        { backgroundColor: Colors[currentColorScheme].background }
+      ]}
+    >
       <View style={styles.content}>
-        {/* Header with Filter and Sort Top Tab Buttons */}
+        {/* 12) Header container with Filter, Sort, and either “Saved Recipes” or “Back” button */}
         <View style={styles.headerContainer}>
+          {/* Filter Button */}
           <TouchableOpacity 
             style={styles.filterButton}
             onPress={() => setOpenFilter(!openFilter)}
@@ -303,6 +298,8 @@ function RecipesScreen(): React.JSX.Element {
             <ThemedText style={styles.sortByText}>Filter</ThemedText>
             <MaterialIcons name="arrow-drop-down" size={24} color="#1B5E20" />
           </TouchableOpacity>
+
+          {/* Sort Controls */}
           <View style={styles.sortHeader}>
             <TouchableOpacity onPress={toggleSortDirection} style={styles.sortIconButton}>
               <MaterialIcons 
@@ -329,9 +326,27 @@ function RecipesScreen(): React.JSX.Element {
               </ThemedText>
             </TouchableOpacity>
           </View>
+
+          {/* Conditionally show Saved Recipes or Back Button */}
+          {showSaved ? (
+            <TouchableOpacity
+              style={styles.backButton}
+              onPress={() => setShowSaved(false)}
+            >
+              <MaterialIcons name="arrow-back" size={20} color="#fff" />
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity
+              style={[styles.savedTab, { backgroundColor: Colors[currentColorScheme].accentButton }]}
+              onPress={() => setShowSaved(true)}
+            >
+              <MaterialIcons name="bookmark" size={24} color="#fff" />
+              <ThemedText style={styles.savedTabText}>Saved Recipes</ThemedText>
+            </TouchableOpacity>
+          )}
         </View>
 
-        {/* Render Dropdowns Right Below Header */}
+        {/* Filter Dropdown */}
         {openFilter && (
           <DropDownPicker<string>
             open={openFilter}
@@ -349,6 +364,8 @@ function RecipesScreen(): React.JSX.Element {
             zIndexInverse={2200}
           />
         )}
+
+        {/* Sort Dropdown */}
         {openSort && (
           <DropDownPicker<string>
             open={openSort}
@@ -357,7 +374,7 @@ function RecipesScreen(): React.JSX.Element {
             setOpen={setOpenSort}
             setValue={(callback) => {
               const newValue = typeof callback === 'function' ? callback(sortBy) : callback;
-              handleSortChange(newValue);
+              handleSortChange(newValue as 'none' | 'matching' | 'time' | 'servings');
             }}
             setItems={setSortItems}
             placeholder="Sort by Option"
@@ -389,16 +406,7 @@ function RecipesScreen(): React.JSX.Element {
           />
         </View>
 
-        {/* Saved Recipes Tab (Right below Search Bar) */}
-        <TouchableOpacity
-          style={[styles.savedTab, { backgroundColor: Colors[currentColorScheme].accentButton }]}
-          onPress={() => setShowSaved(true)}
-        >
-          <MaterialIcons name="bookmark" size={24} color="#fff" />
-          <ThemedText style={styles.savedTabText}>Saved Recipes</ThemedText>
-        </TouchableOpacity>
-
-        {/* Render Recipes List */}
+        {/* Content: Either show savedRecipes or all sortedRecipes */}
         {showSaved ? (
           savedRecipes.length > 0 ? (
             <FlatList
@@ -408,7 +416,9 @@ function RecipesScreen(): React.JSX.Element {
             />
           ) : (
             <View style={styles.emptyContainer}>
-              <ThemedText style={[styles.emptyText, { color: Colors[currentColorScheme].secondaryText }]}>
+              <ThemedText
+                style={[styles.emptyText, { color: Colors[currentColorScheme].secondaryText }]}
+              >
                 No saved recipes
               </ThemedText>
             </View>
@@ -438,6 +448,7 @@ const styles = StyleSheet.create({
   headerContainer: { 
     flexDirection: 'row', 
     justifyContent: 'space-between', 
+    alignItems: 'center',
     marginBottom: 12, 
     zIndex: 3000,
   },
@@ -445,17 +456,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row', 
     alignItems: 'center', 
     padding: 8, 
-    maxWidth: '60%',
-  },
-  filterText: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginLeft: 8,
-    flex: 1,
+    maxWidth: '30%',
   },
   sortHeader: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginLeft: 8,
+    flex: 1,
+  },
+  sortIconButton: {
+    marginRight: 4,
   },
   sortByStatic: {
     fontSize: 16,
@@ -466,6 +476,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 8,
     borderRadius: 8,
+    marginLeft: 8,
   },
   sortByText: {
     fontSize: 16,
@@ -473,8 +484,15 @@ const styles = StyleSheet.create({
     color: '#1B5E20',
     marginRight: 4,
   },
-  sortIconButton: {
-    marginRight: 4,
+  // The new back button (small, modern):
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#2E7D32',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 16,
+    marginLeft: 8,
   },
   savedTab: {
     flexDirection: 'row',
@@ -483,7 +501,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 4,
-    marginBottom: 12,
+    marginLeft: 8,
   },
   savedTabText: {
     fontSize: 16,
@@ -578,16 +596,5 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 18,
     color: '#555',
-  },
-  sortContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  sortLabel: {
-    fontSize: 16,
-  },
-  sortChoice: {
-    fontSize: 16,
   },
 });
