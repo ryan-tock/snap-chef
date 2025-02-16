@@ -1,3 +1,4 @@
+// user_settings.tsx
 import React, { useState } from 'react';
 import {
   SafeAreaView,
@@ -9,8 +10,9 @@ import {
 } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
+import { useThemeToggle } from '@/components/ThemeToggleContext';
+import { Colors } from '@/constants/Colors';
 
-// All possible dietary restrictions and allergies
 const dietaryRestrictionsList = [
   'Vegan',
   'Vegetarian',
@@ -41,7 +43,8 @@ const UserSettings = () => {
   const [activeTab, setActiveTab] = useState<'Dietary' | 'DarkMode' | 'Account'>('Dietary');
   const [dietaryRestrictions, setDietaryRestrictions] = useState<string[]>([]);
   const [allergies, setAllergies] = useState<string[]>([]);
-  const [darkMode, setDarkMode] = useState(false);
+  const { isDark, toggleDarkMode } = useThemeToggle();
+  const currentColorScheme = isDark ? 'dark' : 'light';
 
   const toggleDietaryRestriction = (item: string) => {
     setDietaryRestrictions((prev) =>
@@ -56,51 +59,57 @@ const UserSettings = () => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.tabHeaderContainer}>
+    <SafeAreaView style={[styles.container, { backgroundColor: Colors[currentColorScheme].background }]}>
+      <View style={[styles.tabHeaderContainer, { backgroundColor: Colors[currentColorScheme].tabHeaderBackground }]}>
         <TouchableOpacity
-          style={[styles.tabHeader, activeTab === 'Dietary' && styles.activeTab]}
+          style={[styles.tabHeader, activeTab === 'Dietary' && { borderBottomColor: Colors[currentColorScheme].activeTabBorder, borderBottomWidth: 2 }]}
           onPress={() => setActiveTab('Dietary')}
         >
-          <ThemedText style={styles.tabHeaderText}>Dietary</ThemedText>
+          <ThemedText style={[styles.tabHeaderText, { color: Colors[currentColorScheme].text }]}>Dietary</ThemedText>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.tabHeader, activeTab === 'DarkMode' && styles.activeTab]}
+          style={[styles.tabHeader, activeTab === 'DarkMode' && { borderBottomColor: Colors[currentColorScheme].activeTabBorder, borderBottomWidth: 2 }]}
           onPress={() => setActiveTab('DarkMode')}
         >
-          <ThemedText style={styles.tabHeaderText}>Dark Mode</ThemedText>
+          <ThemedText style={[styles.tabHeaderText, { color: Colors[currentColorScheme].text }]}>Dark Mode</ThemedText>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.tabHeader, activeTab === 'Account' && styles.activeTab]}
+          style={[styles.tabHeader, activeTab === 'Account' && { borderBottomColor: Colors[currentColorScheme].activeTabBorder, borderBottomWidth: 2 }]}
           onPress={() => setActiveTab('Account')}
         >
-          <ThemedText style={styles.tabHeaderText}>Account</ThemedText>
+          <ThemedText style={[styles.tabHeaderText, { color: Colors[currentColorScheme].text }]}>Account</ThemedText>
         </TouchableOpacity>
       </View>
 
       <ScrollView contentContainerStyle={styles.contentContainer}>
         {activeTab === 'Dietary' && (
           <View>
-            <ThemedText style={styles.sectionHeader}>Dietary Restrictions</ThemedText>
+            <ThemedText style={[styles.sectionHeader, { color: Colors[currentColorScheme].text }]}>Dietary Restrictions</ThemedText>
             {dietaryRestrictionsList.map((item) => (
               <TouchableOpacity
                 key={item}
                 style={styles.checkboxContainer}
                 onPress={() => toggleDietaryRestriction(item)}
               >
-                <View style={[styles.checkbox, dietaryRestrictions.includes(item) && styles.checkboxChecked]} />
-                <ThemedText style={styles.checkboxLabel}>{item}</ThemedText>
+                <View style={[
+                  styles.checkbox, 
+                  dietaryRestrictions.includes(item) && { backgroundColor: Colors[currentColorScheme].tint, borderColor: Colors[currentColorScheme].tint }
+                ]} />
+                <ThemedText style={[styles.checkboxLabel, { color: Colors[currentColorScheme].text }]}>{item}</ThemedText>
               </TouchableOpacity>
             ))}
-            <ThemedText style={styles.sectionHeader}>Allergies</ThemedText>
+            <ThemedText style={[styles.sectionHeader, { color: Colors[currentColorScheme].text }]}>Allergies</ThemedText>
             {allergiesList.map((item) => (
               <TouchableOpacity
                 key={item}
                 style={styles.checkboxContainer}
                 onPress={() => toggleAllergy(item)}
               >
-                <View style={[styles.checkbox, allergies.includes(item) && styles.checkboxChecked]} />
-                <ThemedText style={styles.checkboxLabel}>{item}</ThemedText>
+                <View style={[
+                  styles.checkbox, 
+                  allergies.includes(item) && { backgroundColor: Colors[currentColorScheme].tint, borderColor: Colors[currentColorScheme].tint }
+                ]} />
+                <ThemedText style={[styles.checkboxLabel, { color: Colors[currentColorScheme].text }]}>{item}</ThemedText>
               </TouchableOpacity>
             ))}
           </View>
@@ -108,20 +117,19 @@ const UserSettings = () => {
 
         {activeTab === 'DarkMode' && (
           <View style={styles.darkModeContainer}>
-            <ThemedText style={styles.sectionHeader}>Dark Mode</ThemedText>
+            <ThemedText style={[styles.sectionHeader, { color: Colors[currentColorScheme].text }]}>Dark Mode</ThemedText>
             <View style={styles.switchContainer}>
-              <ThemedText style={styles.switchLabel}>{darkMode ? 'On' : 'Off'}</ThemedText>
-              <Switch value={darkMode} onValueChange={setDarkMode} />
+              <ThemedText style={[styles.switchLabel, { color: Colors[currentColorScheme].text }]}>{isDark ? 'On' : 'Off'}</ThemedText>
+              <Switch value={isDark} onValueChange={toggleDarkMode} />
             </View>
           </View>
         )}
 
         {activeTab === 'Account' && (
           <View>
-            <ThemedText style={styles.sectionHeader}>Account Settings</ThemedText>
-            {/* Replace these placeholders with your actual account details */}
-            <ThemedText style={styles.accountText}>Username: user123</ThemedText>
-            <ThemedText style={styles.accountText}>Email: user@example.com</ThemedText>
+            <ThemedText style={[styles.sectionHeader, { color: Colors[currentColorScheme].text }]}>Account Settings</ThemedText>
+            <ThemedText style={[styles.accountText, { color: Colors[currentColorScheme].text }]}>Username: user123</ThemedText>
+            <ThemedText style={[styles.accountText, { color: Colors[currentColorScheme].text }]}>Email: user@example.com</ThemedText>
             <TouchableOpacity style={styles.logoutButton}>
               <ThemedText style={styles.logoutButtonText}>Log Out</ThemedText>
             </TouchableOpacity>
@@ -137,31 +145,23 @@ export default UserSettings;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
   },
   tabHeaderContainer: {
     flexDirection: 'row',
     justifyContent: 'space-around',
     paddingVertical: 12,
-    backgroundColor: '#111',
   },
   tabHeader: {
     paddingVertical: 8,
     paddingHorizontal: 16,
   },
-  activeTab: {
-    borderBottomWidth: 2,
-    borderBottomColor: '#fff',
-  },
   tabHeaderText: {
-    color: '#fff',
     fontSize: 16,
   },
   contentContainer: {
     padding: 12,
   },
   sectionHeader: {
-    color: '#fff',
     fontSize: 18,
     fontWeight: '600',
     marginVertical: 8,
@@ -175,14 +175,9 @@ const styles = StyleSheet.create({
     width: 20,
     height: 20,
     borderWidth: 1,
-    borderColor: '#fff',
     marginRight: 8,
   },
-  checkboxChecked: {
-    backgroundColor: '#0070f3',
-  },
   checkboxLabel: {
-    color: '#fff',
     fontSize: 16,
   },
   darkModeContainer: {
@@ -195,18 +190,16 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   switchLabel: {
-    color: '#fff',
     fontSize: 16,
     marginRight: 12,
   },
   accountText: {
-    color: '#fff',
     fontSize: 16,
     marginVertical: 4,
   },
   logoutButton: {
     marginTop: 20,
-    backgroundColor: '#0070f3',
+    backgroundColor: '#0070f3', // You can also choose to theme this button color if desired.
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 8,
