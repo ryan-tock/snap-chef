@@ -27,6 +27,7 @@ interface Recipe {
   dietary?: string[];
   requiredItems?: string[];
   expiringSoon?: boolean;
+  matchingPercentage?: number; // New property (0 to 100)
 }
 
 function RecipesScreen(): React.JSX.Element {
@@ -44,9 +45,10 @@ function RecipesScreen(): React.JSX.Element {
   const [searchQuery, setSearchQuery] = useState('');
 
   // --- Sort State ---
+  // Updated sort option label.
   const baseSortOptions = [
     { label: 'No Sort', value: 'none' },
-    { label: '# of Ingredients', value: 'matching' },
+    { label: '% Ingredients', value: 'matching' },
     { label: 'Time', value: 'time' },
     { label: 'Servings', value: 'servings' },
   ];
@@ -55,6 +57,7 @@ function RecipesScreen(): React.JSX.Element {
   const [sortItems, setSortItems] = useState<{ label: string; value: string }[]>(baseSortOptions);
   const [openSort, setOpenSort] = useState(false);
 
+  // Toggle function for sort direction.
   const toggleSortDirection = () => {
     if (sortBy !== 'none') {
       setSortDirection(prev => (prev === 'asc' ? 'desc' : 'asc'));
@@ -140,6 +143,7 @@ function RecipesScreen(): React.JSX.Element {
       dietary: ['Vegetarian'],
       requiredItems: ['Pasta', 'Tomatoes'],
       expiringSoon: false,
+      matchingPercentage: 75,
     },
     {
       id: 'r2',
@@ -157,6 +161,7 @@ function RecipesScreen(): React.JSX.Element {
       dietary: [],
       requiredItems: ['Eggs', 'Milk'],
       expiringSoon: true,
+      matchingPercentage: 50,
     },
     {
       id: 'r3',
@@ -174,6 +179,7 @@ function RecipesScreen(): React.JSX.Element {
       dietary: ['Vegan', 'Gluten-Free'],
       requiredItems: ['Lettuce', 'Tomatoes'],
       expiringSoon: false,
+      matchingPercentage: 90,
     },
   ];
 
@@ -229,8 +235,8 @@ function RecipesScreen(): React.JSX.Element {
   if (sortBy === 'matching') {
     sortedRecipes.sort((a, b) =>
       sortDirection === 'asc'
-        ? a.ingredients.length - b.ingredients.length
-        : b.ingredients.length - a.ingredients.length
+        ? (a.matchingPercentage || 0) - (b.matchingPercentage || 0)
+        : (b.matchingPercentage || 0) - (a.matchingPercentage || 0)
     );
   } else if (sortBy === 'time') {
     sortedRecipes.sort((a, b) =>
@@ -255,7 +261,10 @@ function RecipesScreen(): React.JSX.Element {
           <ThemedText style={styles.recipeTitle}>{recipe.title}</ThemedText>
           <ThemedText style={styles.recipeDescription}>{recipe.description}</ThemedText>
           <ThemedText style={styles.prepTime}>
-            Prep Time: {recipe.prepTime}m | Total Time: {recipe.prepTime + recipe.cookTime}m | Servings: {recipe.servings}
+            Prep Time: {recipe.prepTime}m | Total Time: {recipe.prepTime + recipe.cookTime}m
+          </ThemedText>
+          <ThemedText style={styles.extraInfo}>
+            Ingredients: {recipe.matchingPercentage ? recipe.matchingPercentage + '%' : '0%'} | Servings: {recipe.servings}
           </ThemedText>
           {expanded && (
             <ThemedView style={styles.subtab}>
@@ -306,7 +315,7 @@ function RecipesScreen(): React.JSX.Element {
               <ThemedText style={styles.sortByText}>
                 {sortBy !== 'none'
                   ? sortBy === 'matching'
-                    ? '# of Ingredients'
+                    ? '% Ingredients'
                     : sortBy === 'time'
                     ? 'Time'
                     : sortBy === 'servings'
@@ -451,6 +460,11 @@ const styles = StyleSheet.create({
   prepTime: {
     fontSize: 14,
     color: '#555',
+  },
+  extraInfo: {
+    fontSize: 14,
+    color: '#555',
+    marginTop: 4,
   },
   subtab: {
     marginTop: 8,
