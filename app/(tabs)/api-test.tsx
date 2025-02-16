@@ -147,6 +147,14 @@ const ApiTest = () => {
           <Text style={styles.title}>Snap Chef</Text>
           
           <TouchableOpacity 
+            style={styles.ingredientsButton}
+            onPress={() => router.push('/ingredients')}
+          >
+            <MaterialIcons name="kitchen" size={24} color="white" />
+            <Text style={styles.buttonText}>Ingredients</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity 
             style={styles.uploadButton} 
             onPress={pickImage}
           >
@@ -332,7 +340,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: 15,
     borderRadius: 10,
-    marginVertical: 10,
+    marginBottom: 20,
   },
 });
 
